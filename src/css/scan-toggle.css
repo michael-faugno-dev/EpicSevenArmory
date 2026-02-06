@@ -1,0 +1,59 @@
+:root {
+  /* Use your app’s vars if present; fallbacks included */
+  --text: #d6d9e0;
+  --border: #2a3140;
+
+  /* Status colors */
+  --ok: #22c55e;    /* green */
+  --warn: #ef4444;  /* red */
+}
+
+.scan-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+}
+
+.scan-toggle .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #666;
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+
+.scan-toggle .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scan-toggle .status { opacity: 0.95; }
+.scan-toggle .status-ok { color: var(--ok); font-weight: 600; }
+.scan-toggle .status-warn { color: var(--warn); font-weight: 600; }
+
+/* ON + FOUND = green */
+.scan-toggle.is-on.ok { border-color: color-mix(in oklab, var(--ok) 40%, transparent); }
+.scan-toggle.is-on.ok .dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--ok) 30%, transparent);
+}
+
+/* ON + NOT FOUND = red */
+.scan-toggle.is-on.warn { border-color: color-mix(in oklab, var(--warn) 40%, transparent); }
+.scan-toggle.is-on.warn .dot {
+  background: var(--warn);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--warn) 30%, transparent);
+}
+
+/* Disabled visual */
+.scan-toggle:disabled { opacity: .6; cursor: default; }

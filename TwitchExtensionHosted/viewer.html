@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Twitch Overlay</title>
+  <style>
+
+/* ===== Epic Seven Armory — Twitch Overlay CSS ===== */
+
+/* global resets to avoid Twitch UA/style bleed */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-family: Arial, sans-serif;
+}
+
+/* === precise puck math ===
+   sidebar width = (2 * horizontal padding) + (4 * puck size) + (3 * gaps)
+*/
+:root {
+  --puck: 56px;   /* circle diameter */
+  --gap: 8px;     /* spacing between circles */
+  --pad-x: 10px;  /* left/right padding inside sidebar */
+}
+
+/* Sidebar sized to exactly fit 4 circles */
+.sidebar {
+  position: fixed;
+  left: 0;                                /* hard anchor to the left edge */
+  top: 18%;
+  width: calc(var(--pad-x)*2 + var(--puck)*4 + var(--gap)*3);
+  height: 55vh;                           /* shorter, tweak if you like */
+  overflow: hidden;
+  transition: width .12s ease;
+  background-image: url("bg00.jpg");
+  background-size: cover;
+  background-position: center;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding: 0 var(--pad-x);                /* must match the math */
+  transform: translateZ(0);               /* avoid subpixel gaps on HiDPI */
+  will-change: left, top;
+}
+
+/* Closed state */
+.sidebar.closed {
+  width: 30px;
+  opacity: .85;
+  padding: 0;
+}
+
+/* Toggle chip */
+.sidebar .toggle-button {
+  position: absolute;
+  top: 50%;
+  right: -20px;
+  transform: translateY(-50%);
+  user-select: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 41px;
+  border: 1px solid #aaa;
+  background: #ccc;
+}
+
+/* Tabs row uses the same gap/padding as our width math */
+.sidebar .tabs {
+  display: flex;
+  gap: var(--gap);
+  padding: 10px var(--pad-x);
+  align-items: center;
+}
+
+/* Reset UA button styles and make perfect circular pucks */
+.sidebar .tabs .tab-button {
+  all: unset;                              /* kill UA padding/line-height */
+  display: inline-block;
+  cursor: pointer;
+
+  width: var(--puck);
+  height: var(--puck);
+  flex: 0 0 var(--puck);
+  border-radius: 50%;
+  padding: 0;                              /* IMPORTANT: keep at 0 for crisp fit */
+  line-height: 0;
+  overflow: hidden;
+  position: relative;                      /* needed for the overlay */
+
+  /* Portrait fit — edge-to-edge, sharp */
+  background-color: #555;                  /* fallback if no image yet */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;                  /* fill circle, no letterbox */
+  background-origin: border-box;
+
+  /* subtle base inner ring */
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.15);
+
+  color: #fff;                             /* text only if no image */
+  text-align: center;
+  font-size: 10px;
+}
+
+/* Active tab highlight — gold transparent overlay ON TOP of the image */
+.tab-button.active::after {
+  content: "";
+  position: absolute;
+  inset: 0;                 /* top:0; right:0; bottom:0; left:0 */
+  border-radius: 50%;
+  background: rgba(255, 215, 0, 0.35);  /* gold tint */
+  pointer-events: none;     /* don't block clicks */
+}
+
+/* (no ring / no outer glow) */
+
+.tab-button.empty  { background-color: #777; }
+.tab-button.filled { background-color: #444; }
+
+/* Content */
+.sidebar .content {
+  margin-top: 8px;
+  padding: 12px var(--pad-x);
+  color: #fff;
+}
+
+.sidebar .content h2 {
+  margin: 6px 0 8px;
+  font-size: 1.2em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Hide internals when closed so nothing squishes */
+.sidebar.closed .tabs,
+.sidebar.closed .content { display: none !important; }
+.sidebar.closed .toggle-button { right: -20px; }
+
+  </style>
+</head>
+<body>
+  <div id="sidebar" class="sidebar open">
+    <div id="toggleBtn" class="toggle-button" aria-expanded="true">&lt;&lt;</div>
+    <div class="tabs" id="tabs">
+      <button class="tab-button empty" data-index="0"></button>
+      <button class="tab-button empty" data-index="1"></button>
+      <button class="tab-button empty" data-index="2"></button>
+      <button class="tab-button empty" data-index="3"></button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+
+  <!-- Twitch helper (must be external) -->
+  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+  <!-- Your logic (external due to CSP) -->
+  <script src="./viewer.js"></script>
+</body>
+</html>

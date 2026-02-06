@@ -1,0 +1,376 @@
+:root {
+  --bg:#0f1115;
+  --bg2:#12151c;
+  --text:#d6d9e0;
+  --border:#2a3140;
+
+  /* n8n-like accent + states */
+  --primary:#4f7cff;
+  --hover: rgba(255,255,255,0.06);
+  --active-bg: rgba(79,124,255,.14);
+  --active-outline: rgba(79,124,255,.25);
+
+  /* spacing knobs */
+  --nav-gap: 2px;      /* space between items */
+  --nav-pad-y: 6px;    /* vertical padding inside each row */
+}
+
+* { box-sizing:border-box; }
+html, body, #root { height:100%; }
+
+/* Prevent page-level scroll; only main content scrolls */
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
+  overflow:hidden;
+}
+
+/* ==== LAYOUT GRID ==== */
+.e7-grid {
+  display:grid;
+  grid-template-columns:280px 1fr;
+  height:100vh;               /* pin to viewport */
+  overflow:hidden;            /* no outer scrollbars */
+  min-height:0;
+}
+
+/* MAIN COLUMN (header + scrollable content) */
+.e7-maincol {
+  display:grid;
+  grid-template-rows:44px 1fr; /* header + content */
+  min-width:0;
+  height:100%;
+  overflow:hidden;
+}
+
+.e7-header {
+  display:flex;
+  align-items:center;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  min-height:44px;
+}
+
+.e7-header__right {
+  margin-left:auto;
+  padding-right:12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* only this area scrolls */
+.e7-content {
+  overflow:auto;
+  padding:16px;
+  min-height:0;
+}
+
+/* ==== SIDEBAR (pinned) ==== */
+.e7-sidebar {
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:grid;
+  grid-template-rows: auto 1fr auto auto; /* brand / top-nav / lower-nav / userbar */
+  height:100vh;            /* pin to viewport */
+  overflow:hidden;         /* sidebar itself doesn't scroll */
+  min-height:0;
+}
+
+.e7-brand {
+  padding:14px 16px;
+  font-weight:700;
+  border-bottom:2px solid #000;
+}
+
+/* NAV LISTS */
+.e7-nav { padding:6px 8px; }
+
+/* top nav should be scrollable if it ever overflows */
+.e7-sidebar > .e7-nav:first-of-type {
+  overflow-y:auto;
+  min-height:0;
+}
+
+.e7-list {
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:var(--nav-gap);
+}
+
+.e7-list li { margin:0; }
+
+/* compact link rows (n8n-style) */
+.e7-link {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:var(--nav-pad-y) 10px;
+  line-height:1.2;
+  border-radius:8px;
+  color:var(--text);
+  text-decoration:none;
+  background:transparent;
+  text-align:left;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  cursor:pointer;
+  height:auto;             /* no tall boxes */
+  min-height:0;
+}
+
+.e7-link:hover { background:var(--hover); }
+
+.e7-link.active,
+.e7-link[aria-current="page"] {
+  background:var(--active-bg);
+  outline:1px solid var(--active-outline);
+}
+
+/* lower block stays compact and near the bottom */
+.e7-nav--lower {
+  border-top:1px solid var(--border);
+  padding:10px 8px 8px;
+  overflow:visible;         /* never scrolls */
+}
+
+.toggle-button {
+  color: black
+}
+
+/* make the button links (Log Out) the same size as links */
+.e7-btn {
+  border:0;
+  background:none;
+  cursor:pointer;
+  width:100%;
+  text-align:left;
+  color:inherit;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:var(--nav-pad-y) 10px; /* same compact padding */
+  border-radius:8px;
+}
+.e7-btn:hover { background:var(--hover); }
+
+/* bottom username bar */
+.e7-userbar {
+  padding:8px 10px;
+  border-top:1px solid var(--border);
+  background:none;
+  color:var(--text);
+  cursor:pointer;
+  text-align:left;
+}
+
+/* Defensive override if any old class leaks in */
+.e7-nav__item {
+  height:auto !important;
+  padding:var(--nav-pad-y) 10px !important;
+  border-radius:8px !important;
+}
+
+/* === High-contrast content links (e.g., Epic7DB on About page) === */
+:root {
+  --link: #cfe1ff;         /* light, readable on dark bg */
+  --link-hover: #ffffff;    /* brighten on hover/focus */
+}
+
+/* Only affect in-content links, not sidebar .e7-link nav items */
+.e7-content a:not(.e7-link),
+.card a:not(.e7-link) {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
+/* Hover/focus feedback */
+.e7-content a:not(.e7-link):hover,
+.card a:not(.e7-link):hover,
+.e7-content a:not(.e7-link):focus-visible,
+.card a:not(.e7-link):focus-visible {
+  color: var(--link-hover);
+  background: var(--active-bg);
+  outline: 1px solid var(--active-outline);
+  border-radius: 4px;
+}
+
+/* === Google Sign-In Button === */
+.google-btn {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .25px;
+  line-height: 1;
+  height: 40px;
+  padding: 0 16px 0 12px; /* extra room for the G icon */
+  border-radius: 4px;
+  border: 1px solid #dadce0;
+  color: #3c4043;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.google-btn:hover {
+  background: #f7f8f8;
+  border-color: #d2d5da;
+}
+
+.google-btn:active {
+  background: #eeeeee;
+  border-color: #c9cdd3;
+}
+
+.google-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26,115,232,0.3);
+  border-color: #1a73e8;
+}
+
+.google-btn[disabled],
+.google-btn[aria-disabled="true"] {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* Icon box matches Google's spacing */
+.google-btn__icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+}
+
+/* Optional: full-width version */
+.google-btn--block {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Optional: small spinner for async states */
+.google-btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #c7cbd1;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: gspin 0.9s linear infinite;
+}
+@keyframes gspin { to { transform: rotate(360deg); } }
+
+/* Keep consistent in dark theme (Google uses white button on dark, too) */
+html.theme-dark .google-btn { background: #ffffff; color: #3c4043; border-color: #dadce0; }
+html.theme-dark .google-btn:hover { background: #f7f8f8; }
+html.theme-dark .google-btn:active { background: #eeeeee; }
+
+/* Narrow inputs + hide steppers in the Unit stats editor */
+.unit-stats-edit .unit-stat-input {
+  width: 220px;       /* compact, not full-width */
+  max-width: 220px;
+}
+
+/* Chrome/Safari/Edge: remove the number steppers */
+.unit-stats-edit input[type="number"]::-webkit-outer-spin-button,
+.unit-stats-edit input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox: remove the number steppers */
+.unit-stats-edit input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+
+/* ===== THEME VARIABLES ===== */
+/* Default to dark unless overridden by class on <html> */
+/* :root {
+  --bg: #0f1115;
+  --text: #e6e6e6;
+  --muted: #a6adbb;
+  --card: #161a22;
+  --border: #252b36;
+  --sidebar-bg: #0b0e13;
+  --sidebar-border: #1b2130;
+  --link: #cfe1ff;
+  --link-hover: #ffffff;
+  --active-bg: rgba(122,162,255,0.12);
+  --active-outline: rgba(122,162,255,0.4);
+} */
+
+/* Light theme overrides
+html.theme-light {
+  --bg: #f6f7fb;
+  --text: #0f1218;
+  --muted: #475066;
+  --card: #ffffff;
+  --border: #e5e9f2;
+  --sidebar-bg: #f0f3fa;
+  --sidebar-border: #e2e7f1;
+  --link: #2457ff;
+  --link-hover: #1136b3;
+  --active-bg: rgba(36,87,255,0.10);
+  --active-outline: rgba(36,87,255,0.35);
+} */
+
+/* Dark theme explicit (optional, same as :root)
+html.theme-dark {
+  --bg: #0f1115;
+  --text: #e6e6e6;
+  --muted: #a6adbb;
+  --card: #161a22;
+  --border: #252b36;
+  --sidebar-bg: #0b0e13;
+  --sidebar-border: #1b2130;
+  --link: #cfe1ff;
+  --link-hover: #ffffff;
+  --active-bg: rgba(122,162,255,0.12);
+  --active-outline: rgba(122,162,255,0.4);
+}
+
+/* Base surfaces
+body { background: var(--bg); color: var(--text); }
+.e7-sidebar { background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border); }
+.card { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+.container { color: var(--text); } */
+
+/* Text colors */
+/* .e7-sidebar, .e7-nav, .e7-userbar, .card, .container { color: var(--text); }
+.muted, .text-muted { color: var(--muted) !important; } */
+
+/* Links in content (don’t affect nav .e7-link styling) */
+/* .e7-content a:not(.e7-link),
+.card a:not(.e7-link) {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600; */
+/* }
+.e7-content a:not(.e7-link):hover,
+.card a:not(.e7-link):hover,
+.e7-content a:not(.e7-link):focus-visible,
+.card a:not(.e7-link):focus-visible {
+  color: var(--link-hover);
+  background: var(--active-bg);
+  outline: 1px solid var(--active-outline);
+  border-radius: 4px;
+} */
+
+/* Optional: selected/active styles for nav items if you want them theme-aware */
+/* .e7-link.active,
+.e7-link[aria-current="page"] {
+  background: var(--active-bg);
+  border-radius: 8px;
+} */

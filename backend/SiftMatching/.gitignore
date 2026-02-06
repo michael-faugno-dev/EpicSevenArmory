@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual env
+.venv/
+venv/
+
+# OS/editor clutter
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Project outputs/cache
+out/
+config/cache/

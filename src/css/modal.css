@@ -1,0 +1,44 @@
+.e7-modal__backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  display: grid; place-items: center;
+  z-index: 1000;
+}
+
+.e7-modal {
+  width: min(560px, 92vw);
+  background: #181c24;
+  color: #e5e7eb;
+  border: 1px solid #2a3140;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  padding: 18px 18px 16px;
+}
+
+.e7-modal__title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.e7-modal__body {
+  margin: 0 0 14px 0;
+  opacity: .95;
+  line-height: 1.5;
+}
+
+.e7-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.e7-btn-primary {
+  background: #1a73e8;
+  border: 1px solid rgba(60,64,67,.3);
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.e7-btn-primary:disabled { opacity: .6; cursor: default; }

@@ -1,0 +1,1 @@
+backend/Pytesseract/*.dll filter=lfs diff=lfs merge=lfs -text

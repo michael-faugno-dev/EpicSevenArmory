@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>E7 Armory — Config</title>
+  <link rel="stylesheet" href="./config.css" />
+</head>
+<body>
+  <div class="card">
+    <h1>E7 Armory — Config <span id="envBadge" class="badge">loading…</span></h1>
+
+    <div class="row">
+      <input id="username" type="text" placeholder="Your E7 Armory username" />
+      <button id="saveBtn">Connect Channel</button>
+    </div>
+
+    <p id="roleLine" class="muted"></p>
+    <p id="status" class="muted">If you can see this, config.html is loading.</p>
+  </div>
+
+  <!-- Twitch Extension Helper (required) -->
+  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+
+  <!-- Your config logic -->
+  <script src="./config.js"></script>
+</body>
+</html>
