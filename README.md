@@ -58,7 +58,7 @@ Streamers can manually select which units appear on the Twitch overlay. This is 
 ### Images
 
 ![Overlay](Overlay.png)
-![Overlay in Game](Overlay in game.png) 
+![Overlay in Game](Overlay%20in%20game.png) 
 
 ---
 
