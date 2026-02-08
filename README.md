@@ -56,10 +56,9 @@ Streamers can manually select which units appear on the Twitch overlay. This is 
 - Highlighting specific builds  
 
 ### Images
-_Add images here:_
 
 ![Overlay](Overlay.png)
-![Overlay in Game](Overlay-in-game.png) 
+![Overlay in Game](Overlayingame.png) 
 
 ---
 
