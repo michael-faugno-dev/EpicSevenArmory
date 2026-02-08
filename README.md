@@ -76,11 +76,9 @@ The app can automatically detect units on screen using **SIFT feature matching**
 This allows hands-off operation during gameplay.
 
 ### Images
-_Add images here:_
 
 ```
-/images/auto-selection-sift-1.png
-/images/auto-selection-sift-2.png
+SiftResults.png
 ```
 
 ---
