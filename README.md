@@ -1,4 +1,3 @@
-New Readme Coming Soon.
 # Epic Seven Armory  
 **Desktop Unit Tracker & Twitch Overlay for Epic Seven**
 
