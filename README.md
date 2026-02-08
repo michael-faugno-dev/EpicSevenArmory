@@ -78,7 +78,7 @@ This allows hands-off operation during gameplay.
 ### Images
 
 ```
-SiftResults.png
+![Sift Results](SiftResults.png
 ```
 
 ---
