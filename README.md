@@ -82,12 +82,8 @@ All detected and manually added units are stored in the **Your Units** section.
 Units persist between sessions and can be expanded to view full stat breakdowns or deleted if needed.
 
 ### Images
-_Add images here:_
 
-```
-/images/your-units-1.png
-/images/your-units-2.png
-```
+![EpicSevenArmory](EpicSevenArmory.png) 
 
 ---
 
@@ -103,12 +99,8 @@ Each unit includes extracted and stored stats such as:
 Stats are updated automatically when new screenshots are processed.
 
 ### Images
-_Add images here:_
 
-```
-/images/unit-stats-1.png
-/images/unit-stats-2.png
-```
+![Unit Lookup](Unit%20Lookup.png) 
 
 ---
 
