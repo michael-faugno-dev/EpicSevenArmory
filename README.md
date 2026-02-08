@@ -4,6 +4,8 @@ New Readme Coming Soon.
 
 Epic Seven Armory is a desktop application and Twitch extension designed to track Epic Seven units, extract stats automatically from gameplay, and display selected units live on stream as an overlay.
 
+![YourUnits](YourUnits.png) 
+
 The system combines **manual control**, **automatic detection**, and a **stream-ready overlay** so streamers can manage units without breaking gameplay flow.
 
 ---
