@@ -255,19 +255,30 @@ function renderContent() {
 
   const unitDiv = document.createElement("div");
   unitDiv.className = "unit";
-  unitDiv.innerHTML = `
-    <h2>${unit.unit}</h2>
-    <p>Attack: ${unit.attack}</p>
-    <p>Defense: ${unit.defense}</p>
-    <p>Health: ${unit.health}</p>
-    <p>Speed: ${unit.speed}</p>
-    <p>Critical Hit Chance: ${unit.critical_hit_chance}</p>
-    <p>Critical Hit Damage: ${unit.critical_hit_damage}</p>
-    <p>Effectiveness: ${unit.effectiveness}</p>
-    <p>Effect Resistance: ${unit.effect_resistance}</p>
-    ${unit.set1 ? `<p>Set: ${unit.set1}</p>` : ""}
-    ${unit.set2 ? `<p>Set: ${unit.set2}</p>` : ""}
-    ${unit.set3 ? `<p>Set: ${unit.set3}</p>` : ""}
-  `;
+
+  // Use textContent throughout — never innerHTML with user data — to prevent XSS.
+  function addRow(label, value) {
+    if (value === undefined || value === null || value === "") return;
+    const p = document.createElement("p");
+    p.textContent = label + ": " + value;
+    unitDiv.appendChild(p);
+  }
+
+  const h2 = document.createElement("h2");
+  h2.textContent = unit.unit || "";
+  unitDiv.appendChild(h2);
+
+  addRow("Attack", unit.attack);
+  addRow("Defense", unit.defense);
+  addRow("Health", unit.health);
+  addRow("Speed", unit.speed);
+  addRow("Critical Hit Chance", unit.critical_hit_chance);
+  addRow("Critical Hit Damage", unit.critical_hit_damage);
+  addRow("Effectiveness", unit.effectiveness);
+  addRow("Effect Resistance", unit.effect_resistance);
+  if (unit.set1) addRow("Set", unit.set1);
+  if (unit.set2) addRow("Set", unit.set2);
+  if (unit.set3) addRow("Set", unit.set3);
+
   el.appendChild(unitDiv);
 }

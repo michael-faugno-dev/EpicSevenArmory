@@ -12,6 +12,16 @@ var autoLine = document.getElementById("autoLine");
 var roleLine = document.getElementById("roleLine");
 var envBadge = document.getElementById("envBadge");
 var usernameInput = document.getElementById("username");
+var connectSuccess = document.getElementById("connectSuccess");
+
+function showConnectSuccess() {
+  if (connectSuccess) connectSuccess.style.display = "block";
+}
+function hideConnectSuccess() {
+  if (connectSuccess) connectSuccess.style.display = "none";
+}
+
+usernameInput.addEventListener("input", hideConnectSuccess);
 
 function setStatus(msg, cls) {
   if (!cls) cls = "muted";
@@ -189,6 +199,7 @@ saveBtn.addEventListener("click", function () {
         Twitch.ext.configuration.set("broadcaster", "1", JSON.stringify({ username: username }));
       } catch (e) {}
       setStatus("Channel connected! Overlay can now read your selected units.", "ok");
+      showConnectSuccess();
     })
     .catch(function (e) {
       var msg = String(e.message || e);
