@@ -23,4 +23,8 @@ contextBridge.exposeInMainWorld("api", {
 
   // NEW: Google sign-in (will open browser, then resolve with tokens/profile)
   googleSignIn: () => ipcRenderer.invoke("google-oauth-signin"),
+
+  // Proxy HTTP requests through the main process so CORS never applies.
+  // Used for calls to the Render backend from the renderer.
+  renderFetch: (args) => ipcRenderer.invoke("render-api-fetch", args),
 });

@@ -182,21 +182,40 @@ export default function UserProfile() {
     navigate('/your_units', { replace: true });
   };
 
-  // ---- Helpers for detailed fetch error reporting ----
-  async function _safeFetch(url, opts) {
+  // ---- HTTP helper for Render API calls ----
+  // Uses Electron IPC (main process net.request) when available — no CORS.
+  // Falls back to browser fetch() in non-Electron contexts.
+  async function _renderFetch(url, { method = 'GET', headers = {}, body } = {}) {
+    // Electron path: route through main process to avoid CORS entirely
+    if (window.api?.renderFetch) {
+      console.log('[TwitchLink] IPC fetch →', method, url);
+      const result = await window.api.renderFetch({ url, method, headers, body });
+      if (result.error) {
+        console.error('[TwitchLink] IPC net error:', result.error);
+        throw new Error(`Network error reaching server.\nURL: ${url}\nDetail: ${result.error}`);
+      }
+      if (!result.ok) {
+        console.error('[TwitchLink] IPC HTTP error', result.status, url, result.text);
+        throw new Error(
+          `HTTP ${result.status} from server.\nURL: ${url}\n` +
+          `Response: ${result.json?.error || result.json?.message || result.text || '(empty)'}`
+        );
+      }
+      return result.json ?? result.text;
+    }
+
+    // Browser fallback (non-Electron): standard fetch with CORS error details
+    console.log('[TwitchLink] browser fetch →', method, url);
     let resp;
     try {
-      resp = await fetch(url, opts);
+      resp = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
     } catch (networkErr) {
-      // TypeError: Failed to fetch = CORS block or server unreachable
       const detail = String(networkErr?.message || networkErr);
-      console.error('[TwitchLink] Network/CORS error fetching', url, networkErr);
+      console.error('[TwitchLink] CORS/network error:', networkErr);
       throw new Error(
-        `Network error — could not reach server.\n` +
-        `URL: ${url}\n` +
-        `Detail: ${detail}\n\n` +
+        `Network error — could not reach server.\nURL: ${url}\nDetail: ${detail}\n\n` +
         `If this says “Failed to fetch”, it is usually a CORS issue. ` +
-        `Check that the Render server allows origin: ${window.location.origin || '(null)'}`
+        `Origin: ${window.location.origin || '(null)'}`
       );
     }
     const bodyText = await resp.text().catch(() => '');
@@ -205,8 +224,7 @@ export default function UserProfile() {
     if (!resp.ok) {
       console.error('[TwitchLink] HTTP error', resp.status, url, bodyText);
       throw new Error(
-        `HTTP ${resp.status} from server.\n` +
-        `URL: ${url}\n` +
+        `HTTP ${resp.status} from server.\nURL: ${url}\n` +
         `Response: ${bodyJson?.error || bodyJson?.message || bodyText || '(empty)'}`
       );
     }
@@ -231,7 +249,7 @@ export default function UserProfile() {
       console.log('[TwitchLink] Starting link. Origin:', window.location.origin, '→', LINK_HOST);
 
       // Ask Render backend to prepare the OAuth URL and store the pending intent
-      const j = await _safeFetch(
+      const j = await _renderFetch(
         `${LINK_HOST}/auth/twitch/start?link_code=${encodeURIComponent(link_code)}&return_to=close`,
         { headers: { 'Username': username } }
       );
@@ -252,7 +270,7 @@ export default function UserProfile() {
         pollCount++;
         let sj;
         try {
-          sj = await _safeFetch(
+          sj = await _renderFetch(
             `${LINK_HOST}/auth/link/status?link_code=${encodeURIComponent(link_code)}`,
             { cache: 'no-store' }
           );
@@ -290,7 +308,7 @@ export default function UserProfile() {
       return;
     }
     try {
-      const sj = await _safeFetch(
+      const sj = await _renderFetch(
         `${LINK_HOST}/auth/link/status?link_code=${encodeURIComponent(activeLinkCode)}`,
         { cache: 'no-store' }
       );

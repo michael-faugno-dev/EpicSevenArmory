@@ -8,7 +8,7 @@
 //   - Handle the 'google-oauth-signin' IPC channel: loads client credentials from
 //     the config JSON file and runs the PKCE desktop OAuth flow (auth/google_native.js).
 //   - Stop any running Python subprocess on app quit.
-const { app, BrowserWindow, Menu, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, shell, net } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
@@ -161,6 +161,47 @@ app.on("activate", () => {
 app.on("will-quit", () => {
   stopPythonScript();
   if (statusCheckInterval) clearInterval(statusCheckInterval);
+});
+
+// IPC handler for Render API calls — runs in the main process so CORS never applies.
+// The renderer calls window.api.renderFetch({ url, method, headers, body })
+// and gets back { ok, status, json, text, error }.
+ipcMain.handle("render-api-fetch", (_event, { url, method = "GET", headers = {}, body }) => {
+  return new Promise((resolve) => {
+    let req;
+    try {
+      req = net.request({ url, method, useSessionCookies: false });
+    } catch (e) {
+      return resolve({ ok: false, status: 0, json: null, text: "", error: String(e.message || e) });
+    }
+
+    for (const [k, v] of Object.entries(headers || {})) {
+      try { req.setHeader(k, String(v)); } catch (_) {}
+    }
+
+    const chunks = [];
+    let statusCode = 0;
+
+    req.on("response", (resp) => {
+      statusCode = resp.statusCode;
+      resp.on("data", (chunk) => chunks.push(chunk));
+      resp.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        let json = null;
+        try { json = JSON.parse(text); } catch (_) {}
+        resolve({ ok: statusCode >= 200 && statusCode < 300, status: statusCode, json, text });
+      });
+    });
+
+    req.on("error", (err) => {
+      resolve({ ok: false, status: 0, json: null, text: "", error: String(err.message || err) });
+    });
+
+    if (body) {
+      req.write(typeof body === "string" ? body : JSON.stringify(body));
+    }
+    req.end();
+  });
 });
 
 // IPC handler for Google sign-in. Called by the renderer via window.api.googleSignIn().
