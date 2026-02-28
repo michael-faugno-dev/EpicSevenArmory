@@ -512,6 +512,18 @@ def update_profile():
     """Alias for POST /profile for backward compatibility."""
     return profile_update()
 
+@app.route('/auth/twitch/unlink', methods=['POST'])
+@require_auth
+def twitch_unlink():
+    username = request.jwt_username
+    result = users_collection.update_one(
+        {"username": username},
+        {"$unset": {"links.twitch": ""}}
+    )
+    if result.matched_count == 0:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"ok": True}), 200
+
 @app.route('/your_units', methods=['GET', 'POST', 'OPTIONS'])
 @require_auth
 def your_units():

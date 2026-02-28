@@ -84,6 +84,7 @@ export default function UserProfile() {
   const [linkMsg, setLinkMsg] = useState('');
   const [linkErr, setLinkErr] = useState('');
   const [activeLinkCode, setActiveLinkCode] = useState('');
+  const [unlinkBusy, setUnlinkBusy] = useState(false);
 
   // Load profile (and any existing twitch link)
   useEffect(() => {
@@ -299,6 +300,22 @@ export default function UserProfile() {
     }
   }
 
+  async function unlinkTwitch() {
+    if (!window.confirm('Unlink your Twitch account? You can re-link at any time.')) return;
+    setUnlinkBusy(true);
+    setLinkErr('');
+    setLinkMsg('');
+    try {
+      await api.post('/auth/twitch/unlink');
+      setTwitchLink(null);
+      setLinkMsg('Twitch account unlinked.');
+    } catch (e) {
+      setLinkErr(e?.response?.data?.error || e?.message || 'Unlink failed.');
+    } finally {
+      setUnlinkBusy(false);
+    }
+  }
+
   // Manual refresh (if user closed the browser and later comes back)
   async function refreshLinkStatus() {
     setLinkErr('');
@@ -437,18 +454,29 @@ export default function UserProfile() {
         <h3 style={{ margin: '0 0 10px' }}>Twitch Linking</h3>
 
         {twitchLink ? (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: '10px 12px',
-              border: '1px solid rgba(34,197,94,.35)',
-              borderRadius: 8,
-              color: '#bbf7d0',
-              background: 'rgba(34,197,94,.06)',
-              fontSize: 13,
-            }}
-          >
-            Linked to Twitch: <strong>@{twitchLink.login || twitchLink.user_id}</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+            <div
+              style={{
+                flex: 1,
+                padding: '10px 12px',
+                border: '1px solid rgba(34,197,94,.35)',
+                borderRadius: 8,
+                color: '#bbf7d0',
+                background: 'rgba(34,197,94,.06)',
+                fontSize: 13,
+              }}
+            >
+              Linked to Twitch: <strong>@{twitchLink.login || twitchLink.user_id}</strong>
+            </div>
+            <button
+              type="button"
+              className="e7-btn-secondary"
+              onClick={unlinkTwitch}
+              disabled={unlinkBusy}
+              style={{ padding: '8px 14px', borderRadius: 10, whiteSpace: 'nowrap' }}
+            >
+              {unlinkBusy ? 'Unlinking…' : 'Unlink'}
+            </button>
           </div>
         ) : (
           <div

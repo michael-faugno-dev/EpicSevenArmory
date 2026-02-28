@@ -48,7 +48,7 @@ export default function LeftSidebar() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Buy Me a Coffee
+                  Donate
                 </a>
               </li>
               <li>
@@ -86,7 +86,7 @@ export default function LeftSidebar() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Buy Me a Coffee
+                  Donate
                 </a>
               </li>
             </ul>
