@@ -17,6 +17,7 @@ import AboutPage from "./pages/AboutPage";
 import AutoImportLog from "./pages/AutoImportLog";
 import { useAuth } from './context/AuthContext';
 import UploadDraftPage from "./pages/UploadDraftPage";
+import UpdateBanner from './components/UpdateBanner';
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -65,6 +66,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <UpdateBanner />
       <div className="e7-grid">
         <LeftSidebar />
         <div className="e7-maincol">

@@ -27,4 +27,12 @@ contextBridge.exposeInMainWorld("api", {
   // Proxy HTTP requests through the main process so CORS never applies.
   // Used for calls to the Render backend from the renderer.
   renderFetch: (args) => ipcRenderer.invoke("render-api-fetch", args),
+
+  // Notifies the renderer when a newer GitHub release is detected.
+  // Returns a cleanup function to remove the listener on unmount.
+  onUpdateAvailable: (handler) => {
+    const listener = (_event, data) => handler(data);
+    ipcRenderer.on("update-available", listener);
+    return () => ipcRenderer.removeListener("update-available", listener);
+  },
 });

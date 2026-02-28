@@ -73,6 +73,7 @@ function createWindow() {
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
     updateHeroData();
+    checkForUpdates();
     // Monitor is user-toggled
   });
 
@@ -147,6 +148,53 @@ function updateHeroData() {
     if (mainWindow && !mainWindow.isDestroyed())
       mainWindow.webContents.send("update-complete", code);
   });
+}
+
+// ---------- Update check — compares current version against latest GitHub release ----------
+// Uses net.request (Node networking, not subject to renderer CSP).
+// If a newer tag is found, sends 'update-available' to the renderer so it can show a banner.
+function isNewerVersion(latest, current) {
+  const parse = (v) => String(v).replace(/^v/, "").split(".").map(Number);
+  const [lMaj = 0, lMin = 0, lPat = 0] = parse(latest);
+  const [cMaj = 0, cMin = 0, cPat = 0] = parse(current);
+  if (lMaj !== cMaj) return lMaj > cMaj;
+  if (lMin !== cMin) return lMin > cMin;
+  return lPat > cPat;
+}
+
+function checkForUpdates() {
+  const currentVersion = app.getVersion();
+  let req;
+  try {
+    req = net.request({
+      url: "https://api.github.com/repos/michael-faugno-dev/EpicSevenArmory/releases/latest",
+      method: "GET",
+    });
+  } catch (_) { return; }
+
+  req.setHeader("User-Agent", "EpicSevenArmory-UpdateCheck/" + currentVersion);
+  req.setHeader("Accept", "application/vnd.github+json");
+
+  const chunks = [];
+  req.on("response", (resp) => {
+    resp.on("data", (chunk) => chunks.push(chunk));
+    resp.on("end", () => {
+      try {
+        const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        const latestTag = (data.tag_name || "").replace(/^v/, "");
+        if (latestTag && isNewerVersion(latestTag, currentVersion)) {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send("update-available", {
+              version: latestTag,
+              url: data.html_url || "https://github.com/michael-faugno-dev/EpicSevenArmory/releases/latest",
+            });
+          }
+        }
+      } catch (_) {}
+    });
+  });
+  req.on("error", () => {});
+  req.end();
 }
 
 // ---------- App lifecycle — standard Electron patterns ----------
