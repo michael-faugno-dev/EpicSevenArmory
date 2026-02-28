@@ -32,8 +32,9 @@ def _profile_completed(user_doc: dict) -> bool:
     """
     Return True if the user has filled in all required profile fields.
     New users are redirected to /profile on first login until this returns True.
+    streamer_name is legacy and intentionally excluded from this check.
     """
-    for k in ("epic_seven_account", "streamer_name", "rta_rank"):
+    for k in ("epic_seven_account", "rta_rank"):
         v = (user_doc or {}).get(k, "")
         if not v or not str(v).strip():
             return False

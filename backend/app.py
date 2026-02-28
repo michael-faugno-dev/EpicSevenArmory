@@ -474,7 +474,17 @@ def profile_get():
     username = request.args.get('username', '')
     if not username:
         return jsonify({"success": False, "error": "Username required"}), 400
-    user = users_collection.find_one({"username": username}, {"_id": 0, "google_id": 0})
+    user = users_collection.find_one({"username": username}, {
+        "_id": 0,
+        "google_id": 0,
+        "email": 0,           # PII — not needed by any public consumer
+        "access_token": 0,    # legacy empty field
+        # top-level twitch fields from old schema — excluded in favour of links.twitch
+        "twitch_user_id": 0,
+        "twitch_display_name": 0,
+        "twitch_avatar_url": 0,
+        "twitch_linked_at": 0,
+    })
     if not user:
         return jsonify({"success": False, "error": "User not found"}), 404
     return jsonify({"success": True, "profile": user}), 200
