@@ -1072,6 +1072,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "Saria",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "\u00c4on Ras",
@@ -1629,6 +1636,13 @@
             "grade": "5",
             "name": "Ordnungsh\u00fcterin Aria",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "Schulkrankenschwester Yulha",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -2444,6 +2458,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "Track-Queen Sigret",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "Meeresbrise Luluca",
@@ -2561,6 +2582,13 @@
             "name": "Engel des Lichts Angelica",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "Verdecktes Auge Surin",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "ko": [
@@ -3636,6 +3664,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "\uc0ac\ub974\ubbf8\uc544",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "\uae30\uc6d0\uc758 \ub77c\uc2a4",
@@ -4193,6 +4228,13 @@
             "grade": "5",
             "name": "\ud48d\uae30\uc704\uc6d0 \uc544\ub9ac\uc544",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "\ubcf4\uac74\uad50\uc0ac \uc728\ud558",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -5008,6 +5050,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "\ucf8c\uc18d\uc758 \uae30\uc218 \uc138\ud06c\ub808\ud2b8",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "\ubc14\ub2e4 \ud5a5\uae30 \ub8e8\ub8e8\uce74",
@@ -5125,6 +5174,13 @@
             "name": "\ube5b\uc758 \ucc9c\uc0ac \uc548\uc824\ub9ac\uce74",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "\ubd09\uc548\uc758 \uc218\ub9b0",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "pt": [
@@ -6200,6 +6256,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "S\u00e1ria",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "Ras da Origem",
@@ -6757,6 +6820,13 @@
             "grade": "5",
             "name": "Aria Instrutora",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "Enfermeira Yul Ha",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -7572,6 +7642,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "Porta-bandeira Veloz Sigret",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "Luluca Aroma de Mar",
@@ -7689,6 +7766,13 @@
             "name": "Ang\u00e9lica Anjo da Luz",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "Surin Olho Selado",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "th": [
@@ -8764,6 +8848,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "\u0e0b\u0e32\u0e40\u0e23\u0e35\u0e22",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "\u0e23\u0e32\u0e2a\u0e41\u0e2b\u0e48\u0e07\u0e1b\u0e10\u0e21\u0e01\u0e32\u0e25",
@@ -9321,6 +9412,13 @@
             "grade": "5",
             "name": "\u0e01\u0e23\u0e23\u0e21\u0e01\u0e32\u0e23\u0e27\u0e34\u0e19\u0e31\u0e22 \u0e2d\u0e32\u0e40\u0e23\u0e35\u0e22",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "\u0e04\u0e23\u0e39\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e22\u0e39\u0e25\u0e2e\u0e32",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -10136,6 +10234,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "\u0e1c\u0e39\u0e49\u0e16\u0e37\u0e2d\u0e18\u0e07\u0e40\u0e23\u0e47\u0e27 \u0e0b\u0e35\u0e40\u0e01\u0e23\u0e47\u0e15",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "\u0e01\u0e25\u0e34\u0e48\u0e19\u0e2d\u0e32\u0e22\u0e2a\u0e21\u0e38\u0e17\u0e23 \u0e25\u0e39\u0e25\u0e39\u0e01\u0e49\u0e32",
@@ -10253,6 +10358,13 @@
             "name": "\u0e19\u0e32\u0e07\u0e1f\u0e49\u0e32\u0e41\u0e2b\u0e48\u0e07\u0e41\u0e2a\u0e07 \u0e41\u0e2d\u0e07\u0e40\u0e08\u0e25\u0e34\u0e01\u0e49\u0e32",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "\u0e14\u0e27\u0e07\u0e15\u0e32\u0e1c\u0e19\u0e36\u0e01 \u0e0b\u0e39\u0e23\u0e34\u0e19",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "zh-TW": [
@@ -11328,6 +11440,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "\u85a9\u82e5\u7c73\u4e9e",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "\u8d77\u6e90\u62c9\u65af",
@@ -11885,6 +12004,13 @@
             "grade": "5",
             "name": "\u98a8\u7d00\u59d4\u54e1\u827e\u8389\u96c5",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "\u4fdd\u5065\u5ba4\u8001\u5e2b\u5f8b\u8377",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -12700,6 +12826,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "\u75be\u901f\u8cfd\u8eca\u624b\u8cfd\u73c2\u862d\u7279",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "\u6d77\u6d0b\u9999\u6c23\u7490\u7490\u5361",
@@ -12817,6 +12950,13 @@
             "name": "\u5149\u4e4b\u5929\u4f7f\u5b89\u6f54\u8389\u5361",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "\u5c01\u773c\u8607\u7433",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "ja": [
@@ -13892,6 +14032,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "\u30b5\u30eb\u30df\u30a2",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "\u8d77\u6e90\u306e\u30e9\u30b9",
@@ -14449,6 +14596,13 @@
             "grade": "5",
             "name": "\u98a8\u7d00\u59d4\u54e1 \u30a2\u30ea\u30a2",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "\u990a\u8b77\u6559\u8aed \u30e6\u30eb\u30cf",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -15264,6 +15418,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "\u5feb\u901f\u306e\u65d7\u624b \u30bb\u30af\u30ec\u30c3\u30c8",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "\u6d77\u306e\u9999\u308a \u30eb\u30eb\u30ab",
@@ -15381,6 +15542,13 @@
             "name": "\u5149\u306e\u5929\u4f7f \u30a2\u30f3\u30b8\u30a7\u30ea\u30ab",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "\u5c01\u773c\u306e\u30b9\u30fc\u30ea\u30f3",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "en": [
@@ -16456,6 +16624,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "Saria",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "Genesis Ras",
@@ -17013,6 +17188,13 @@
             "grade": "5",
             "name": "Disciplinary Prefect Aria",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "School Nurse Yulha",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -17828,6 +18010,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "Swift Flagbearer Sigret",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "Ocean Breeze Luluca",
@@ -17945,6 +18134,13 @@
             "name": "Angel of Light Angelica",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "Sealed Eye Surin",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "fr": [
@@ -19020,6 +19216,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "Saria",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "Ras de l'origine",
@@ -19577,6 +19780,13 @@
             "grade": "5",
             "name": "Aria du comit\u00e9 des m\u0153urs",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "Yulha infirmi\u00e8re scolaire",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -20392,6 +20602,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "Sigret porte-drapeau \u00e9clair",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "Luluca brise marine",
@@ -20509,6 +20726,13 @@
             "name": "Angelica de la lumi\u00e8re",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "Surin Yeux scell\u00e9s",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "zh-CN": [
@@ -21584,6 +21808,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "\u8428\u82e5\u7c73\u4e9a",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "\u8d77\u6e90\u62c9\u65af",
@@ -22141,6 +22372,13 @@
             "grade": "5",
             "name": "\u98ce\u7eaa\u59d4\u5458\u827e\u8389\u96c5",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "\u4fdd\u5065\u5ba4\u8001\u5e08\u5f8b\u8377",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -22956,6 +23194,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "\u75be\u901f\u8d5b\u8f66\u624b\u8d5b\u73c2\u5170\u7279",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "\u6d77\u6d0b\u9999\u6c14\u7490\u7490\u5361",
@@ -23073,6 +23318,13 @@
             "name": "\u5149\u4e4b\u5929\u4f7f\u5b89\u6d01\u8389\u5361",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "\u5c01\u773c\u82cf\u7433",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ],
     "es": [
@@ -24148,6 +24400,13 @@
             "attribute_cd": "fire"
         },
         {
+            "code": "c1177",
+            "grade": "5",
+            "name": "Saria",
+            "job_cd": "ranger",
+            "attribute_cd": "wind"
+        },
+        {
             "code": "c2001",
             "grade": "5",
             "name": "Ras de la G\u00e9nesis",
@@ -24705,6 +24964,13 @@
             "grade": "5",
             "name": "Prefecta disciplinaria Aria",
             "job_cd": "warrior",
+            "attribute_cd": "dark"
+        },
+        {
+            "code": "c2131",
+            "grade": "5",
+            "name": "Enfermera escolar Yulha",
+            "job_cd": "assassin",
             "attribute_cd": "dark"
         },
         {
@@ -25520,6 +25786,13 @@
             "attribute_cd": "ice"
         },
         {
+            "code": "c5072",
+            "grade": "5",
+            "name": "Sigret abanderada veloz",
+            "job_cd": "assassin",
+            "attribute_cd": "fire"
+        },
+        {
             "code": "c5082",
             "grade": "5",
             "name": "Luluca de brisa marina",
@@ -25637,6 +25910,13 @@
             "name": "Ang\u00e9lica de luz",
             "job_cd": "mage",
             "attribute_cd": "light"
+        },
+        {
+            "code": "c6065",
+            "grade": "4",
+            "name": "Surin ojo sellado",
+            "job_cd": "mage",
+            "attribute_cd": "dark"
         }
     ]
 }

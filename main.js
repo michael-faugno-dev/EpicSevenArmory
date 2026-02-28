@@ -1,4 +1,13 @@
-// main.js
+// main.js — Electron main process
+//
+// Responsibilities:
+//   - Create and manage the BrowserWindow (React renderer at APP_URL).
+//   - Intercept navigation and window.open calls: same-origin links stay in-app,
+//     external URLs are delegated to the system browser via shell.openExternal.
+//   - Spawn update_hero_data.py on startup to refresh the local hero database.
+//   - Handle the 'google-oauth-signin' IPC channel: loads client credentials from
+//     the config JSON file and runs the PKCE desktop OAuth flow (auth/google_native.js).
+//   - Stop any running Python subprocess on app quit.
 const { app, BrowserWindow, Menu, ipcMain, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -65,7 +74,6 @@ function createWindow() {
     mainWindow.show();
     updateHeroData();
     // Monitor is user-toggled
-    mainWindow.webContents.openDevTools();
   });
 
   mainWindow.on("closed", () => {
@@ -80,7 +88,8 @@ function createWindow() {
   }
 }
 
-// ---------- Helper: load Google client from JSON (no env vars) ----------
+// ---------- Helper: load Google client credentials from JSON (no env vars) ----------
+// Checks multiple candidate paths so the app works both in dev and when packaged.
 function loadGoogleClientFromFile() {
   const candidates = [
     path.join(__dirname, "backend", "config", "google_oauth.json"),
@@ -112,7 +121,9 @@ function loadGoogleClientFromFile() {
   return { clientId: "", clientSecret: "", path: "(not found)" };
 }
 
-// ---------- Update hero data (unchanged) ----------
+// ---------- Update hero data on startup ----------
+// Runs update_hero_data.py as a child process and forwards its stdout/stderr to
+// the renderer via IPC so the UI can show progress or log any errors.
 function updateHeroData() {
   const updateScript = path.join(__dirname, "python", "update_hero_data.py");
   console.log("Updating hero data...");
@@ -138,7 +149,8 @@ function updateHeroData() {
   });
 }
 
-// ---------- App lifecycle ----------
+// ---------- App lifecycle — standard Electron patterns ----------
+// macOS keeps the app running after the last window closes (activate event re-creates it).
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
@@ -151,7 +163,9 @@ app.on("will-quit", () => {
   if (statusCheckInterval) clearInterval(statusCheckInterval);
 });
 
-// Google OAuth — load client from JSON (no env vars)
+// IPC handler for Google sign-in. Called by the renderer via window.api.googleSignIn().
+// Loads client credentials from the config JSON (never from env vars in packaged builds),
+// runs the PKCE desktop flow, and returns the tokens/profile to the renderer.
 ipcMain.handle("google-oauth-signin", async () => {
   try {
     const { clientId, clientSecret } = loadGoogleClientFromFile();

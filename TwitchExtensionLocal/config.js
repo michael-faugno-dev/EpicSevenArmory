@@ -27,16 +27,47 @@ try {
 
 if (helperLoaded) {
   setBadge("helper ok");
+
+  // onAuthorized fires when the Twitch extension JWT is ready.
+  // After authorization, fetch the current DB mapping so the input is
+  // pre-populated from the server, not just from Twitch CDN storage.
   Twitch.ext.onAuthorized(function (auth) {
     authToken = auth.token;
     channelId = auth.channelId;
     var role = auth.role || "unknown";
     roleLine.textContent =
       "Authorized as Twitch " + role + ". Channel ID: " + channelId;
-    setStatus("Enter your E7 Armory username and click Connect Channel.");
+
+    setStatus("Checking current configuration…");
+
+    fetch(API_BASE + "/twitch/channel_config", {
+      headers: { Authorization: "Bearer " + authToken },
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.username) {
+          if (!usernameInput.value) {
+            usernameInput.value = data.username;
+          }
+          setStatus(
+            "Currently connected to: " + data.username +
+            ". Edit and click Connect Channel to update.",
+            "ok"
+          );
+        } else {
+          setStatus("No channel mapped yet. Enter your E7 Armory username and click Connect Channel.");
+        }
+      })
+      .catch(function () {
+        setStatus(
+          "Could not reach server. Enter your E7 Armory username and click Connect Channel.",
+          "err"
+        );
+      });
   });
 
-  // Load any saved broadcaster config (optional)
+  // Secondary fallback: pre-populate from Twitch CDN storage if the server
+  // fetch above hasn't set the value yet.
   Twitch.ext.configuration.onChanged(function () {
     try {
       var b = Twitch.ext.configuration.broadcaster;

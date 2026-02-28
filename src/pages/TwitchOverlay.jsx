@@ -1,7 +1,15 @@
+// TwitchOverlay.jsx
+// Setup page for the Twitch stream overlay. Lets users pick up to 4 of their
+// uploaded heroes to display on stream. The selected units are persisted to
+// MongoDB via /update_selected_units so the Twitch extension panel can read them.
+//
+// Hero portrait images are fetched through the backend proxy (/hero_image/<slug>)
+// which keeps the API credentials server-side rather than exposing them in the browser.
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import "../css/TwitchOverlay.css";
+import { API_BASE, getAuthHeaders } from '../api/client';
 
 const TwitchOverlay = () => {
   const { selectedUnits, setSelectedUnits, tabImages, setTabImages } = useSidebar();
@@ -26,10 +34,11 @@ const TwitchOverlay = () => {
 
   const fetchPossibleUnits = async () => {
     try {
-      const response = await fetch('http://localhost:5000/your_units', {
+      const response = await fetch(`${API_BASE}/your_units`, {
         method: 'GET',
         headers: {
-          'Username': username
+          'Username': username,
+          ...getAuthHeaders(),
         }
       });
       if (response.ok) {
@@ -45,10 +54,11 @@ const TwitchOverlay = () => {
 
   const fetchSelectedUnits = async () => {
     try {
-      const response = await fetch('http://localhost:5000/get_selected_units_data', {
+      const response = await fetch(`${API_BASE}/get_selected_units_data`, {
         method: 'GET',
         headers: {
-          'Username': username
+          'Username': username,
+          ...getAuthHeaders(),
         }
       });
       if (response.ok) {
@@ -64,14 +74,9 @@ const TwitchOverlay = () => {
     }
   };
 
-  const fetchUnitImage = async (unitName) => {
-    try {
-      const response = await fetch(`https://epic7db.com/api/heroes/${unitName.replace(/ /g, '-')}/mikeyfogs`);
-      const data = await response.json();
-      setTabImages(prevImages => ({ ...prevImages, [unitName]: data.image }));
-    } catch (error) {
-      console.error('Error fetching image:', error);
-    }
+  const fetchUnitImage = (unitName) => {
+    const slug = unitName.replace(/ /g, '-').toLowerCase();
+    setTabImages(prevImages => ({ ...prevImages, [unitName]: `${API_BASE}/hero_image/${slug}` }));
   };
 
   const toggleSidebar = () => {
@@ -86,11 +91,12 @@ const TwitchOverlay = () => {
     setSelectedUnits([]);
   
     try {
-      await fetch('http://localhost:5000/update_selected_units', {
+      await fetch(`${API_BASE}/update_selected_units`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Username': username
+          'Username': username,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ units: [] })
       });
@@ -110,11 +116,12 @@ const TwitchOverlay = () => {
     setSelectedUnits(updatedSelectedUnits);
 
     try {
-      await fetch('http://localhost:5000/update_selected_units', {
+      await fetch(`${API_BASE}/update_selected_units`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Username': username
+          'Username': username,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ units: updatedSelectedUnits.map(u => ({ id: u._id })) })
       });

@@ -22,7 +22,7 @@ var detailsEl = document.getElementById("details");
 function loadSelectedUnits() {
   if (!accessToken) return;
 
-  fetch(API_BASE + "/twitch/get_selected_units_data", {
+  fetch(API_BASE + "/twitch/selected_units", {
     method: "GET",
     headers: { Authorization: "Bearer " + accessToken },
   })

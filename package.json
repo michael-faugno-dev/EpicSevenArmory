@@ -5,7 +5,7 @@
   "scripts": {
     "react-test": "react-scripts test",
     "react-start": "react-scripts start",
-    "electron-start": "electron-rebuild && electron .",
+    "electron-start": "wait-on http://localhost:3000 && electron-rebuild && electron .",
     "start": "concurrently \"npm run react-start\" \"npm run electron-start\"",
     "react-build": "react-scripts build",
     "eject": "react-scripts eject"
@@ -19,7 +19,8 @@
     "electron": "^30.0.9",
     "electron-rebuild": "^3.2.9",
     "os-browserify": "^0.3.0",
-    "path-browserify": "^1.0.1"
+    "path-browserify": "^1.0.1",
+    "wait-on": "^9.0.4"
   },
   "dependencies": {
     "assert": "^2.1.0",

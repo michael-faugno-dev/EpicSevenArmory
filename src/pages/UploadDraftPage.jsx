@@ -1,3 +1,8 @@
+// UploadDraftPage.jsx
+// Upload an end-of-battle draft screenshot for automatic hero detection.
+// POST /draft/upload runs SIFT feature matching on the image to identify
+// the four heroes in the draft, then upserts the user's selected_units document
+// so the Twitch overlay reflects the latest draft automatically.
 import React, { useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";

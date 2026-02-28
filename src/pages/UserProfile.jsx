@@ -1,12 +1,24 @@
 // UserProfile.jsx
+//
+// Profile settings page. Handles two independent concerns:
+//
+//   1. Core profile fields (epic_seven_account, streamer_name, rta_rank):
+//      Loaded from GET /profile on mount, saved to POST /profile.
+//      Values are also cached in localStorage as a fallback if the API is unreachable.
+//
+//   2. Twitch OAuth linking:
+//      Uses a server-side link_code flow via the Render backend (LINK_HOST).
+//      beginTwitchLink() generates a random code, requests an OAuth URL from Render,
+//      opens it in the system browser via openExternal(), then polls
+//      /auth/link/status?link_code=... every 2s until linked (max 90s).
+//      refreshLinkStatus() lets the user manually recheck after closing/reopening the app.
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import WelcomeModal from '../components/WelcomeModal';
 import SaveConfirmModal from '../components/SaveConfirmModal';
+import { api, API_BASE, getAuthHeaders } from '../api/client';
 
-const API_BASE = 'http://localhost:5000';               // your local API (profile save/load)
 const LINK_HOST = 'https://epicsevenarmoryserver-1.onrender.com'; // Render (Twitch link flow)
 
 // Try Electron shell.openExternal; fall back to window.open.
@@ -21,6 +33,9 @@ function openExternal(url) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+// Generate a random alphanumeric code used as a one-time state parameter
+// for the Twitch link flow. Prevents CSRF by ensuring the OAuth callback
+// matches the specific tab/session that initiated the request.
 function randomLinkCode(len = 24) {
   const a = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let s = '';
@@ -77,7 +92,9 @@ export default function UserProfile() {
       setErr('');
       try {
         const u = encodeURIComponent(username);
-        const res = await fetch(`${API_BASE}/profile?username=${u}`);
+        const res = await fetch(`${API_BASE}/profile?username=${u}`, {
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
           const body = await res.json();
           if (body?.success && body?.profile && mounted) {
@@ -139,11 +156,10 @@ export default function UserProfile() {
     setMsg('');
     setSaving(true);
     try {
-      await axios.post(`${API_BASE}/update_profile`, {
+      await api.post('/profile', {
         username: formData.username,
         epic_seven_account: formData.epic_seven_account,
         streamer_name: formData.streamer_name,
-        straemer_name: formData.streamer_name, // legacy
         rta_rank: formData.rta_rank,
       });
 

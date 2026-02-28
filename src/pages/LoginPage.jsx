@@ -1,9 +1,20 @@
+// LoginPage.jsx
+//
+// Two-step Google OAuth flow for the Electron desktop app:
+//   Step 1 (Electron → Google): window.api.googleSignIn() (IPC to main.js)
+//     triggers the PKCE loopback flow in auth/google_native.js and returns an
+//     ID token from Google's token endpoint.
+//   Step 2 (Renderer → Flask): POST /auth/google/native with that ID token.
+//     The backend verifies with Google, upserts the user in MongoDB, and issues
+//     a signed app JWT that is stored via AuthContext.loginWithToken().
+//
+// After login, new users (profile_completed === false) are sent to /profile;
+// returning users go straight to /your_units.
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GoogleSignInButton from "../components/GoogleSignInButton";
-
-const API_BASE = 'http://localhost:5000';
+import { API_BASE } from '../api/client';
 
 export default function LoginPage() {
   const navigate = useNavigate();

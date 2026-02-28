@@ -1,7 +1,18 @@
+// UploadUnit.jsx
+//
+// Two-step upload flow for adding a hero unit to the user's profile:
+//   Step 1: POST /upload_files — save the screenshot(s) or Fribbels JSON to disk.
+//   Step 2: POST /display — run OCR / JSON parsing and return extracted stat objects.
+// The result is passed to /display-units via React Router location state
+// so DisplayUnits.jsx can render the stats without a second network call.
+//
+// Accepts either:
+//   - One or more E7 gear screen screenshots (OCR path)
+//   - A single Fribbels Gear Optimizer export (.json)
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
 
 const cardStyle = {
   border: '1px solid rgba(255,255,255,.08)',
@@ -52,14 +63,13 @@ export default function UploadUnit() {
     }
 
     try {
-      const uploadResponse = await axios.post('http://localhost:5000/upload_files', formData, {
+      const uploadResponse = await api.post('/upload_files', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       const filenames = uploadResponse.data.filenames;
-      const displayResponse = await axios.post('http://localhost:5000/display', {
+      const displayResponse = await api.post('/display', {
         filenames,
-        username,
         rank,
         isJson: !!jsonFile
       });

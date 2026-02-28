@@ -1,6 +1,18 @@
 # backend/routes_draft.py
-# POST /draft/upload: accepts multipart image, runs SIFT, maps detected slugs
-# to user's units in image_stats via uploaded_by + slugified 'unit' name.
+#
+# POST /draft/upload: end-of-battle draft screenshot auto-detection endpoint.
+#
+# Flow:
+#   1. Accept a multipart image upload from the client.
+#   2. Run SIFT-based hero detection (draft_detection.detect_heroes) to get
+#      a list of hero slugs visible in the screenshot.
+#   3. Map each detected slug back to a unit document in image_stats for that
+#      user (slugifying the stored 'unit' field for comparison).
+#   4. Upsert the selected_units document so the overlay reflects the draft.
+#
+# Note: this endpoint identifies the caller via the 'Username' header rather
+# than a JWT token. Ensure the route is protected at the network level or
+# add require_auth from app.py if public exposure is a concern.
 import os
 import re
 import tempfile
@@ -12,6 +24,11 @@ from draft_detection import detect_heroes
 draft_bp = Blueprint("draft_bp", __name__)
 
 def _slugify(s: str) -> str:
+    """
+    Unicode-aware slug: strip combining marks (accents), lowercase,
+    keep only alnum/hyphen/space, then collapse spaces to hyphens.
+    Matches the slug logic in hero_images.py so both sides normalize identically.
+    """
     if not s:
         return ""
     s = unicodedata.normalize("NFKD", s)
@@ -66,7 +83,7 @@ def upload_and_detect_draft():
         f.save(p)
         slugs = detect_heroes(p, top_k=4)
 
-    db = request.app_db  # set in app.py via before_request hook
+    db = request.app_db  # injected by app.py's before_request hook; avoids circular import
     unit_ids = []
     debug_map = []
     unmatched = []

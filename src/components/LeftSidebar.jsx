@@ -31,7 +31,7 @@ export default function LeftSidebar() {
               <li><NavLink to="/upload" className="e7-link">Upload Unit</NavLink></li>
               <li><NavLink to="/unit_lookup" className="e7-link">Unit Look Up</NavLink></li>
               {/* Twitch Overlay visible only when logged in */}
-              <li><NavLink to="/upload-draft" className="e7-link">Upload Draft</NavLink></li>
+              {/* <li><NavLink to="/upload-draft" className="e7-link">Upload Draft</NavLink></li> */}
               <li><NavLink to={overlayTarget} className="e7-link">Twitch Overlay</NavLink></li>
               {/* <li><NavLink to="/auto-import-log" className="e7-link">Import Log</NavLink></li> */}
             </ul>

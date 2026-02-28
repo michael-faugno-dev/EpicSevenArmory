@@ -1,9 +1,13 @@
+// YourUnitsPage.jsx
+// Lists all hero units uploaded by the current user with inline edit and delete.
+// Images are resolved from the local backend proxy (/hero_image/<slug>) with a
+// fallback to any image URL or base64 data stored in the unit document itself.
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import UnitStatsList from '../components/UnitStatsList';
+import { api, API_BASE } from '../api/client';
 
-const API_BASE = 'http://localhost:5000';
-
+// Decode the stored JWT to get the username without an extra network round-trip.
+// Falls back to '' on any parse error (malformed token, not logged in, etc.).
 function parseJwtUsername() {
   try {
     const t = localStorage.getItem('token');
@@ -86,6 +90,9 @@ function percentify(v) {
   return `${s}%`;
 }
 
+// Normalize field values before saving: append "%" to percent stats, convert
+// numeric strings to numbers, and leave free-text fields as-is. This keeps
+// the MongoDB documents consistent regardless of how the user typed the values.
 function coerceTypes(updates) {
   const out = {};
   for (const [k, v] of Object.entries(updates)) {
@@ -132,7 +139,7 @@ export default function YourUnitsPage() {
       setErr('');
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE}/your_units`, {
+        const res = await api.get('/your_units', {
           params: { username },
           headers: { username },
         });
@@ -203,8 +210,9 @@ export default function YourUnitsPage() {
     setErr('');
     try {
       const tryPost = async (url) =>
-        axios.post(url, { unit_id: id, updates }, { headers: { username } });
+        api.post(url, { unit_id: id, updates }, { headers: { username } });
 
+      // Try the canonical endpoint first; fall back to the legacy path on 404.
       let res;
       try {
         res = await tryPost(`${API_BASE}/update_unit_stats`);
@@ -252,8 +260,8 @@ export default function YourUnitsPage() {
     setBusyId(id);
     setErr('');
     try {
-      const res = await axios.post(
-        `${API_BASE}/delete_unit`,
+      const res = await api.post(
+        '/delete_unit',
         { unit_to_delete: id },
         { headers: { username } }
       );

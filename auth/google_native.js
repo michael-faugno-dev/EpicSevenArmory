@@ -76,6 +76,9 @@ function loadGoogleConfig() {
   };
 }
 
+// Bind an HTTP server on an OS-assigned port (port 0) so it never conflicts
+// with existing services. The resulting redirect_uri is passed to Google so
+// the auth code lands back here after the user consents in their browser.
 function startLoopbackServer() {
   return new Promise((resolve, reject) => {
     const server = http.createServer();
@@ -88,6 +91,9 @@ function startLoopbackServer() {
   });
 }
 
+// Wait for Google to redirect the user back to the loopback server with
+// the authorization code. Validates the 'state' parameter to prevent CSRF,
+// sends a friendly HTML response to the browser, then closes the server.
 function waitForAuthCode(server, expectedState) {
   return new Promise((resolve, reject) => {
     const handler = (req, res) => {
@@ -131,6 +137,8 @@ function waitForAuthCode(server, expectedState) {
   });
 }
 
+// Exchange the authorization code for access/id/refresh tokens by POSTing to
+// Google's token endpoint over raw HTTPS (no external dependencies).
 function tokenRequest(params) {
   return new Promise((resolve, reject) => {
     const data = new URLSearchParams(params).toString();

@@ -1,3 +1,22 @@
+"""
+sift_core.py — Core SIFT-based hero detection for the real-time unit scanner.
+
+Pipeline overview:
+  1. Load screen image and extract per-slot ROIs (regions of interest) using
+     coordinates from roi_config.json (calibrated to a reference resolution).
+  2. For each ROI, compute whether the slot is "banned" using two signals:
+       a. Red-ribbon detection — a red context belt appears to the right of
+          banned portraits in the draft screen.
+       b. Desaturation/dimming — banned heroes have noticeably greyed-out
+          portraits compared to active picks.
+  3. For non-banned ROIs, score every hero template using SIFT + Lowe's ratio
+     test and pick the top candidate. Ties (score margin < MIN_SCORE_MARGIN)
+     are left unresolved to avoid false positives.
+  4. Return annotated image and per-slot result dicts.
+
+Tunable constants are grouped at the top of the file.
+"""
+
 import cv2
 import numpy as np
 import os
@@ -125,18 +144,33 @@ def compute_template_db(templates_dir: str):
 # Matching (no homography)
 # =========================
 def score_template_vs_roi(template_des, roi_gray, flann):
+    """
+    Score a single template against a screen ROI using SIFT + Lowe's ratio test.
+
+    Returns the count of 'good' matches (higher = more confident identification).
+    We use the raw good-match count as the score rather than a homography inlier
+    count because portrait crops are small and mostly planar — a full homography
+    check adds latency without meaningfully improving precision at this scale.
+    """
     sift = create_sift()
     kp_q, des_q = sift.detectAndCompute(roi_gray, None)
     if des_q is None or len(kp_q) < 2:
         return 0
     matches = flann.knnMatch(template_des, des_q, k=2)
     good = [m for m, n in matches if m.distance < LOWE_RATIO * n.distance]
-    return len(good)  # use #good as score
+    return len(good)
 
 # =========================
 # Banned detection helpers
 # =========================
 def right_belt(full_bgr, x, y, w, h):
+    """
+    Extract the context strip immediately to the right of a portrait ROI.
+    This strip contains the red 'banned' ribbon in the draft screen.
+    The vertical extent is padded by CTX_BELT_Y_PAD to tolerate slight
+    alignment variation between different device resolutions.
+    Returns (belt_crop, bounding_box) or (None, box) if the crop is empty.
+    """
     H, W, _ = full_bgr.shape
     x0 = x + w
     x1 = min(W, int(x + w + CTX_BELT_X_W * w))
@@ -147,6 +181,12 @@ def right_belt(full_bgr, x, y, w, h):
     return full_bgr[y0:y1, x0:x1], (x0, y0, x1, y1)
 
 def red_ratio(img_bgr) -> float:
+    """
+    Return the fraction of pixels in img_bgr that fall in the HSV red range.
+    Red wraps around the hue wheel (0–10° and 170–180°), so two range checks
+    are combined with a bitwise OR mask before counting.
+    A ratio above RED_RATIO_CTX_THR indicates a red ribbon is present.
+    """
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     lower1 = np.array([0, 100, 100], dtype=np.uint8)
     upper1 = np.array([10, 255, 255], dtype=np.uint8)
@@ -156,10 +196,20 @@ def red_ratio(img_bgr) -> float:
     return cv2.countNonZero(mask) / float(img_bgr.shape[0] * img_bgr.shape[1])
 
 def sat_val_means(roi_bgr):
+    """
+    Return (saturation_mean, value_mean) of the portrait crop in HSV space.
+    Used to detect greyed-out (banned) portraits: low S = desaturated, low V = dark.
+    """
     hsv = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2HSV)
     return float(np.mean(hsv[:,:,1])), float(np.mean(hsv[:,:,2]))
 
 def banned_text_score(belt_bgr, tmpl_gray) -> float:
+    """
+    Template-match a pre-cropped 'BANNED' text image against the context belt.
+    Uses TM_CCOEFF_NORMED (1.0 = perfect match). Returns 0.0 if either input
+    is None or the belt is smaller than the template (match not possible).
+    A score >= BANNED_TM_THRESH is treated as a confirmed ban.
+    """
     if belt_bgr is None or tmpl_gray is None:
         return 0.0
     belt_gray = cv2.cvtColor(belt_bgr, cv2.COLOR_BGR2GRAY)
@@ -172,6 +222,12 @@ def banned_text_score(belt_bgr, tmpl_gray) -> float:
 # Annotation
 # =========================
 def annotate(base_bgr, rois, results):
+    """
+    Draw detection results onto a copy of the screen image.
+    Each portrait ROI gets a colored rectangle (red=banned, green=matched, orange=unknown)
+    and a text label with the hero name and confidence score. The context belt box is
+    also drawn in blue for debugging banned detection.
+    """
     out = base_bgr.copy()
     for i, (x,y,w,h) in enumerate(rois):
         res = results[i]
@@ -192,6 +248,22 @@ def annotate(base_bgr, rois, results):
 # Main
 # =========================
 def run_sift_on_rois(screen_path: str, templates_dir: str, rois: List[Tuple[int,int,int,int]]):
+    """
+    Main entry point: run the full detection pipeline on a single screenshot.
+
+    Steps:
+      1. Load screen + build template descriptor DB (SIFT features per hero/skin).
+      2. First pass: compute saturation/value means and red-ribbon ratio for all ROIs,
+         allowing relative ban detection (comparing ROIs against each other).
+      3. Second pass: for non-banned ROIs, score every hero template via SIFT and
+         Lowe's ratio test. The top candidate is accepted only if its margin over the
+         second-best exceeds MIN_SCORE_MARGIN.
+      4. Return annotated image + list of per-slot result dicts.
+
+    Returns:
+      (annotated_bgr, results) where results is a list of dicts with keys:
+        slot, best (hero_id or None), score, inliers, roi, banned, metrics, belt_box
+    """
     base_bgr, base_gray = load_image_gray(screen_path)
     db   = compute_template_db(templates_dir)
     flann= create_flann()

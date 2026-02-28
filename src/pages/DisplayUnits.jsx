@@ -1,3 +1,11 @@
+// DisplayUnits.jsx
+// Shown immediately after a successful upload. Receives extracted unit stats via
+// React Router location state (no extra API call needed).
+//
+// TODO: The hero portrait images are fetched directly from epic7db.com using a
+// hardcoded API key. This exposes the key in client-side JavaScript. Consider
+// routing image requests through the backend proxy (/hero_image/<slug>) the same
+// way TwitchOverlay.jsx does.
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';

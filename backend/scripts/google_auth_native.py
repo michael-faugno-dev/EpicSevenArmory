@@ -29,6 +29,10 @@ GOOGLE_BP = Blueprint("google_native_auth", __name__)
 log = logging.getLogger(__name__)
 
 def _profile_completed(user_doc: dict) -> bool:
+    """
+    Return True if the user has filled in all required profile fields.
+    New users are redirected to /profile on first login until this returns True.
+    """
     for k in ("epic_seven_account", "streamer_name", "rta_rank"):
         v = (user_doc or {}).get(k, "")
         if not v or not str(v).strip():
@@ -36,6 +40,10 @@ def _profile_completed(user_doc: dict) -> bool:
     return True
 
 def _ensure_username(users_collection, base_name: str) -> str:
+    """
+    Derive a unique username from the Google account's email prefix.
+    If 'alice' is already taken, tries 'alice2', 'alice3', etc.
+    """
     name = base_name or "user"
     i = 1
     original_name = name
@@ -81,6 +89,17 @@ def _load_google_client_id() -> Optional[str]:
 
 @GOOGLE_BP.route("/auth/google/native", methods=["POST"])
 def auth_google_native():
+    """
+    Exchange a Google ID token (obtained by the Electron frontend via PKCE OAuth)
+    for an app-scoped JWT session token.
+
+    Flow:
+      1. Validate the Google ID token with google.oauth2.id_token.verify_oauth2_token.
+      2. Look up or create the user in MongoDB (keyed by google_id, then email).
+      3. Issue a signed HS256 JWT containing username/email/sub; valid for 7 days.
+      4. Return the token plus whether the user's profile is complete so the
+         frontend knows whether to redirect to /profile.
+    """
     try:
         if not GOOGLE_AUTH_AVAILABLE:
             return jsonify({
@@ -185,14 +204,18 @@ def auth_google_native():
         if secret is None or secret == "":
             return jsonify({"success": False, "error": "secret_key_not_configured"}), 500
 
-        now = datetime.utcnow()
+        # Use time.time() for iat/exp — datetime.utcnow().timestamp() is a
+        # known Python gotcha: naive datetimes are treated as local time by
+        # .timestamp(), producing a wrong (future) iat on machines behind UTC.
+        import time as _time
+        now_ts = int(_time.time())
         payload = {
             "sub": str(user["_id"]),
             "username": user["username"],
             "email": user.get("email", ""),
             "provider": "google",
-            "iat": int(now.timestamp()),
-            "exp": int((now + timedelta(days=7)).timestamp()),
+            "iat": now_ts,
+            "exp": now_ts + 7 * 24 * 3600,
         }
         app_token = jwt.encode(payload, secret, algorithm="HS256")
 

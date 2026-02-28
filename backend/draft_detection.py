@@ -1,9 +1,16 @@
 # backend/draft_detection.py
-# Detects heroes by SIFT across a folder-per-slug template tree.
-# Example layout:
+#
+# Detects heroes in an end-of-battle draft screenshot using SIFT feature matching.
+# Each hero has one or more template images (skins) stored under a named folder.
+# The best match score across all skins is used as the hero's final score,
+# so detection works even if a player uses a non-default skin.
+#
+# Template layout:
 #   backend/SiftMatching/templates/<slug>/default.png
-#   backend/SiftMatching/templates/<slug>/skin1.png
-#   ...
+#   backend/SiftMatching/templates/<slug>/skin1.png   (optional alternate skins)
+#
+# SIFT descriptors and keypoints are loaded once on first call and cached in
+# the module-level _CACHE dict to avoid expensive recomputation per request.
 
 import os
 import glob
@@ -76,16 +83,22 @@ def detect_heroes(image_path: str, top_k: int = 4) -> List[str]:
     if scene_des is None:
         return []
 
-    # FLANN for SIFT (KDTree); if using ORB switch to BFMatcher(NORM_HAMMING)
+    # FLANN-based KD-tree matcher is faster than brute-force for float32 SIFT
+    # descriptors. Use BFMatcher(NORM_HAMMING) instead if switching to ORB.
     index_params = dict(algorithm=1, trees=5)
     search_params = dict(checks=80)
     matcher = cv2.FlannBasedMatcher(index_params, search_params)
 
     def score_template(template_des) -> int:
+        """
+        Count 'good' feature matches using Lowe's ratio test (threshold 0.7).
+        A match is accepted only when the best match is significantly closer
+        than the second-best, reducing false positives from ambiguous regions.
+        """
         matches = matcher.knnMatch(template_des, scene_des, k=2)
         good = 0
         for m, n in matches:
-            if m.distance < 0.7 * n.distance:
+            if m.distance < 0.7 * n.distance:  # Lowe's ratio test
                 good += 1
         return good
 
@@ -103,7 +116,9 @@ def detect_heroes(image_path: str, top_k: int = 4) -> List[str]:
 
     slug_scores.sort(key=lambda x: x[1], reverse=True)
 
-    # Tune threshold after a couple of tests; start conservative
+    # Only accept a hero if it has at least MIN_GOOD_MATCHES feature correspondences.
+    # Lower values increase recall but risk false positives (wrong hero detected).
+    # Raise this value if you see incorrect detections; lower it if known heroes are missed.
     MIN_GOOD_MATCHES = 20
     detected = [slug for slug, score in slug_scores if score >= MIN_GOOD_MATCHES][:top_k]
     return detected

@@ -27,16 +27,59 @@ try {
 
 if (helperLoaded) {
   setBadge("helper ok");
+
+  // onAuthorized fires when the Twitch extension JWT is ready.
+  // We use it to:
+  //   1. Display the broadcaster's Twitch role and channel ID.
+  //   2. Fetch the current server-side channel→username mapping so the input
+  //      is pre-populated from the DB rather than only from Twitch CDN storage
+  //      (CDN storage can be empty on first load or after a cache clear).
   Twitch.ext.onAuthorized(function (auth) {
     authToken = auth.token;
     channelId = auth.channelId;
     var role = auth.role || "unknown";
     roleLine.textContent =
       "Authorized as Twitch " + role + ". Channel ID: " + channelId;
-    setStatus("Enter your E7 Armory username and click Connect Channel.");
+
+    setStatus("Checking current configuration…");
+
+    // Fetch current DB mapping for this channel.
+    fetch(API_BASE + "/twitch/channel_config", {
+      headers: { Authorization: "Bearer " + authToken },
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        if (data && data.username) {
+          // Pre-populate only if the user hasn't already typed something.
+          if (!usernameInput.value) {
+            usernameInput.value = data.username;
+          }
+          setStatus(
+            "Currently connected to: " +
+              data.username +
+              ". Edit the field and click Connect Channel to update.",
+            "ok"
+          );
+        } else {
+          setStatus(
+            "No channel mapped yet. Enter your E7 Armory username and click Connect Channel."
+          );
+        }
+      })
+      .catch(function () {
+        // Server unreachable — fall back to whatever Twitch CDN storage has.
+        setStatus(
+          "Could not reach server. Enter your E7 Armory username and click Connect Channel.",
+          "err"
+        );
+      });
   });
 
-  // Load any saved broadcaster config (optional)
+  // onChanged fires when the Twitch broadcaster configuration changes (CDN-backed).
+  // We use it as a secondary fallback: if the server fetch above already set the
+  // username, !usernameInput.value will be false and this is a no-op.
   Twitch.ext.configuration.onChanged(function () {
     try {
       var b = Twitch.ext.configuration.broadcaster;
@@ -90,6 +133,7 @@ saveBtn.addEventListener("click", function () {
         return resp.text().then(function (t) {
           throw new Error("EBS " + resp.status + ": " + t);
         });
+      // Also persist to Twitch CDN storage as a secondary cache.
       try {
         Twitch.ext.configuration.set(
           "broadcaster",

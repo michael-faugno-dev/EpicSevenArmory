@@ -1,3 +1,8 @@
+// AuthContext.jsx
+// Global authentication state. Bootstraps from localStorage on load so the
+// user stays logged in across page refreshes. Google OAuth is the only sign-in
+// method; the app JWT (HS256) is stored in localStorage['token'] and sent as
+// the Authorization header on every API request via the axios interceptor in client.js.
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
@@ -38,8 +43,7 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem('token');
-    // (keep username if you want it persisted; otherwise also remove it)
-    // localStorage.removeItem('username');
+    localStorage.removeItem('username');
   };
 
   const value = {

@@ -26,7 +26,7 @@ screenshots/
 out/
 config/cache/
 
-# Secrets (if you use them)
+# Secrets
 .env
 .env.*
 
@@ -34,3 +34,7 @@ config/cache/
 backend/config/google_oauth.json
 
 backend/Pytesseract/*.dll
+
+pythoncode/
+
+.claude/

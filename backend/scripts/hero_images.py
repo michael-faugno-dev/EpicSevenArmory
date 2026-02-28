@@ -1,3 +1,14 @@
+# backend/scripts/hero_images.py
+#
+# Flask Blueprint that serves hero portrait images from a local cache directory.
+# Lookup strategy (in order):
+#   1. Exact filename match: hero_images/<slug>.png
+#   2. Fuzzy filename match via slugified index (prefix / substring checks)
+#   3. Network fallback: fetch from epic7db.com API, save locally, then serve
+#
+# The image index (_INDEX) is built lazily on first request and invalidated
+# whenever a new image is downloaded from the network fallback.
+#
 from __future__ import annotations
 import re, os
 from pathlib import Path
@@ -22,14 +33,20 @@ E7DB_SUFFIX = os.getenv('E7DB_SUFFIX') # matches your previous API usage
 # ----------------------------
 
 def _slugify(name: str) -> str:
+    """
+    Normalize a hero name or filename stem to a URL-safe slug.
+    e.g. "New Moon Luna" -> "new-moon-luna", "Destina (Tenebria)" -> "destina-tenebria"
+    Used for both URL routing and file-system lookup to ensure consistent matching.
+    """
     s = (name or "").strip().lower()
-    s = re.sub(r"[’'`.,/()_]", " ", s)     # drop punctuation-ish
+    s = re.sub(r"[‘’`.,/()_]", " ", s)     # drop punctuation-ish
     s = re.sub(r"\s+", "-", s).strip("-")  # spaces -> dash
     s = re.sub(r"[^a-z0-9\-]", "", s)      # keep a-z0-9-
     s = re.sub(r"-{2,}", "-", s)           # collapse --
     return s
 
 def _hero_dir() -> Path:
+    """Return the hero images folder. Can be overridden via app.config['HERO_IMAGES_DIR']."""
     cfg = current_app.config.get("HERO_IMAGES_DIR")
     if cfg:
         return Path(cfg).resolve()
@@ -43,9 +60,12 @@ def _ensure_dir():
 def _normalize_filename(p: Path) -> str:
     return _slugify(p.stem)
 
+# Lazy index: list of (Path, slugified_stem) for every .png in the hero_images folder.
+# Rebuilt on first request and invalidated after any network download.
 _INDEX: List[Tuple[Path, str]] | None = None
 
 def _reset_index():
+    """Invalidate the filename index so it is rebuilt on the next request."""
     global _INDEX
     _INDEX = None
 
@@ -57,6 +77,14 @@ def _ensure_index() -> List[Tuple[Path, str]]:
     return _INDEX
 
 def _find_best_filename(slug: str) -> Optional[str]:
+    """
+    Find the best matching .png filename for a given slug using a three-tier lookup:
+      1. Exact match: hero_images/<slug>.png (fastest path)
+      2. Exact slugified-stem match from the full index
+      3. Prefix/suffix match (handles variant suffixes like "-1" or "-skin")
+      4. Substring containment match (loosest; avoids network fallback for near-misses)
+    Returns the filename (not full path) or None if no match found.
+    """
     folder = _hero_dir()
     exact = folder / f"{slug}.png"
     if exact.exists():

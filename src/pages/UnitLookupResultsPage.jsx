@@ -1,3 +1,10 @@
+// UnitLookupResultsPage.jsx
+// Fetches and displays publicly-available hero data from epic7db.com for any
+// unit name looked up by the user. The API response schema is not guaranteed
+// to be stable, so field resolution is done with several fallback key names
+// (e.g. element/attribute, class/classType/role, stats/baseStats).
+//
+// TODO: Same API key exposure issue as DisplayUnits.jsx — consider a backend proxy.
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
@@ -9,6 +16,8 @@ const cardStyle = {
   padding: 12,
 };
 
+// Convert a hero display name to the slug expected by epic7db.com.
+// "Ainos 2.0" is a known special case where the generic rule produces the wrong slug.
 function toE7Slug(rawName) {
   if (rawName === "Ainos 2.0") return "ainos-20";
   return rawName
