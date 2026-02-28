@@ -182,6 +182,37 @@ export default function UserProfile() {
     navigate('/your_units', { replace: true });
   };
 
+  // ---- Helpers for detailed fetch error reporting ----
+  async function _safeFetch(url, opts) {
+    let resp;
+    try {
+      resp = await fetch(url, opts);
+    } catch (networkErr) {
+      // TypeError: Failed to fetch = CORS block or server unreachable
+      const detail = String(networkErr?.message || networkErr);
+      console.error('[TwitchLink] Network/CORS error fetching', url, networkErr);
+      throw new Error(
+        `Network error — could not reach server.\n` +
+        `URL: ${url}\n` +
+        `Detail: ${detail}\n\n` +
+        `If this says “Failed to fetch”, it is usually a CORS issue. ` +
+        `Check that the Render server allows origin: ${window.location.origin || '(null)'}`
+      );
+    }
+    const bodyText = await resp.text().catch(() => '');
+    let bodyJson = null;
+    try { bodyJson = JSON.parse(bodyText); } catch (_) {}
+    if (!resp.ok) {
+      console.error('[TwitchLink] HTTP error', resp.status, url, bodyText);
+      throw new Error(
+        `HTTP ${resp.status} from server.\n` +
+        `URL: ${url}\n` +
+        `Response: ${bodyJson?.error || bodyJson?.message || bodyText || '(empty)'}`
+      );
+    }
+    return bodyJson ?? bodyText;
+  }
+
   // ---- New: Begin Twitch link via Render (link_code state param) ----
   async function beginTwitchLink() {
     setLinkErr('');
@@ -196,14 +227,17 @@ export default function UserProfile() {
       const link_code = randomLinkCode();
       setActiveLinkCode(link_code);
 
+      setLinkMsg(`Connecting to ${LINK_HOST}…`);
+      console.log('[TwitchLink] Starting link. Origin:', window.location.origin, '→', LINK_HOST);
+
       // Ask Render backend to prepare the OAuth URL and store the pending intent
-      const r = await fetch(
+      const j = await _safeFetch(
         `${LINK_HOST}/auth/twitch/start?link_code=${encodeURIComponent(link_code)}&return_to=close`,
         { headers: { 'Username': username } }
       );
-      const j = await r.json();
-      if (!r.ok || !j.ok || !j.auth_url) {
-        throw new Error(j.error || 'Unable to start Twitch linking.');
+
+      if (!j?.ok || !j?.auth_url) {
+        throw new Error(j?.error || 'Server returned no auth_url. Check server configuration.');
       }
 
       // Open system browser to twitch consent
@@ -212,11 +246,21 @@ export default function UserProfile() {
 
       // Poll until linked or timeout
       const deadline = Date.now() + 90_000; // 90s
+      let pollCount = 0;
       while (Date.now() < deadline) {
-        const s = await fetch(`${LINK_HOST}/auth/link/status?link_code=${encodeURIComponent(link_code)}`, {
-          cache: 'no-store',
-        });
-        const sj = await s.json();
+        await new Promise(res => setTimeout(res, 2000));
+        pollCount++;
+        let sj;
+        try {
+          sj = await _safeFetch(
+            `${LINK_HOST}/auth/link/status?link_code=${encodeURIComponent(link_code)}`,
+            { cache: 'no-store' }
+          );
+        } catch (pollErr) {
+          console.warn('[TwitchLink] Poll error (will retry):', pollErr);
+          setLinkMsg(`Waiting… (poll ${pollCount}, retrying after error)`);
+          continue;
+        }
         if (sj?.linked) {
           const login = (sj.twitch_login || '').toLowerCase();
           setTwitchLink({ user_id: '', login });
@@ -225,12 +269,13 @@ export default function UserProfile() {
           return;
         }
         if (sj?.status === 'error') {
-          throw new Error('Link failed.');
+          throw new Error('Link failed on server side. Check Render logs.');
         }
-        await new Promise(res => setTimeout(res, 2000));
+        setLinkMsg(`Waiting for Twitch authorization… (${Math.round((deadline - Date.now()) / 1000)}s left)`);
       }
-      throw new Error('Timed out waiting for Twitch link.');
+      throw new Error('Timed out waiting for Twitch link (90s). Try again.');
     } catch (e) {
+      console.error('[TwitchLink] Error:', e);
       setLinkErr(e?.message || 'Link failed.');
       setLinkBusy(false);
     }
@@ -245,10 +290,10 @@ export default function UserProfile() {
       return;
     }
     try {
-      const s = await fetch(`${LINK_HOST}/auth/link/status?link_code=${encodeURIComponent(activeLinkCode)}`, {
-        cache: 'no-store',
-      });
-      const sj = await s.json();
+      const sj = await _safeFetch(
+        `${LINK_HOST}/auth/link/status?link_code=${encodeURIComponent(activeLinkCode)}`,
+        { cache: 'no-store' }
+      );
       if (sj?.linked) {
         const login = (sj.twitch_login || '').toLowerCase();
         setTwitchLink({ user_id: '', login });
@@ -257,6 +302,7 @@ export default function UserProfile() {
         setLinkMsg(`Status: ${sj?.status || 'pending'}. Keep this window open while you authorize in the browser.`);
       }
     } catch (e) {
+      console.error('[TwitchLink] Refresh error:', e);
       setLinkErr(e?.message || 'Could not check link status.');
     }
   }
@@ -314,7 +360,7 @@ export default function UserProfile() {
       <form onSubmit={onSave} style={{ maxWidth: 560 }} autoComplete="off">
         <div style={{ display: 'grid', gap: 12 }}>
           <label style={{ display: 'grid', gap: 6 }}>
-            <span>Epic Seven Account</span>
+            <span>Epic Seven Account Name</span>
             <input
               name="epic_seven_account"
               value={formData.epic_seven_account}
@@ -326,7 +372,7 @@ export default function UserProfile() {
             />
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
+          {/* <label style={{ display: 'grid', gap: 6 }}>
             <span>Twitch Username <span style={{ opacity:.7 }}>(legacy field)</span></span>
             <input
               name="streamer_name"
@@ -337,7 +383,7 @@ export default function UserProfile() {
               style={{ width: '100%' }}
               autoComplete="off"
             />
-          </label>
+          </label> */}
 
           <label style={{ display: 'grid', gap: 6 }}>
             <span>RTA rank</span>
