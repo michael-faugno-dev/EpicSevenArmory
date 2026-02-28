@@ -23,7 +23,7 @@ function setAutoLine(msg, cls) {
   if (!autoLine) return;
   if (!cls) cls = "muted";
   autoLine.textContent = msg;
-  autoLine.className = cls;
+  autoLine.className = "auto-line " + cls;
 }
 
 function setBadge(text) {

@@ -8,23 +8,77 @@
 </head>
 <body>
   <div class="card">
-    <h1>E7 Armory — Config <span id="envBadge" class="badge">loading…</span></h1>
 
-    <p id="roleLine" class="muted"></p>
-
-    <!-- Step 1: auto-detect account from linked Twitch identity -->
-    <p id="autoLine" class="muted"></p>
-    <div class="row">
-      <button id="autoBtn" class="btn-secondary">Find My Account</button>
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1>E7 Armory Unit Overlay</h1>
+        <p class="tagline">Show your Epic Seven unit stats live to viewers while you stream.</p>
+      </div>
+      <span id="envBadge" class="badge">loading&hellip;</span>
     </div>
 
-    <!-- Step 2: manual entry / override -->
-    <div class="row" style="margin-top:10px">
-      <input id="username" type="text" placeholder="Your E7 Armory username" />
-      <button id="saveBtn">Connect Channel</button>
+    <!-- Current connection status -->
+    <div class="status-card">
+      <span class="status-label">Status</span>
+      <span id="status" class="muted">Connecting&hellip;</span>
     </div>
 
-    <p id="status" class="muted">If you can see this, config.html is loading.</p>
+    <div class="divider"></div>
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Set up the E7 Armory desktop app</div>
+        <ul class="step-list">
+          <li>Upload screenshots of your in-game units</li>
+          <li>Select up to <strong>4 units</strong> to feature on your overlay</li>
+          <li>Go to <strong>Profile &rarr; Link Twitch</strong> to verify your account ownership</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Connect your channel</div>
+        <p class="step-sub">
+          Click <em>Find My Account</em> to auto-detect your Armory username from your
+          linked Twitch identity, or enter it manually below.
+        </p>
+
+        <div id="autoLine" class="auto-line muted"></div>
+
+        <div class="connect-row">
+          <input id="username" type="text" placeholder="Your E7 Armory username" />
+          <button id="saveBtn">Connect</button>
+        </div>
+        <div style="margin-top:8px">
+          <button id="autoBtn" class="btn-secondary">Find My Account</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Go live &mdash; you&rsquo;re all set!</div>
+        <p class="step-sub">
+          A collapsible sidebar will appear on your stream showing your selected
+          units&rsquo; stats. Update your unit selection in the app anytime &mdash;
+          the overlay refreshes automatically.
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Auth info footer -->
+    <p id="roleLine" class="footer-line"></p>
+
   </div>
 
   <!-- Twitch Extension Helper (required, must be first script) -->

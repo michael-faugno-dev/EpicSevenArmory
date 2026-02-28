@@ -1,34 +1,220 @@
 :root { color-scheme: dark; }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  margin: 0; padding: 24px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: #eee;
-  background: black;
+  background: #0d0d12;
+  color: #e2e8f0;
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.5;
 }
+
+/* ── Card ───────────────────────────────────────── */
 .card {
-  max-width: 620px; margin: 0 auto;
-  background: rgba(17,17,17,.94);
-  border: 1px solid #333; border-radius: 12px;
-  padding: 16px; box-shadow: 0 12px 28px rgba(0,0,0,.45);
+  max-width: 620px;
+  margin: 0 auto;
+  background: rgba(18, 18, 26, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
-h1 { margin: 0 0 10px; font-size: 22px; }
-.row { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+
+/* ── Header ─────────────────────────────────────── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.tagline {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.badge {
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(145, 70, 255, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(145, 70, 255, 0.3);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+/* ── Status card ────────────────────────────────── */
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.status-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* ── Divider ────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 20px 0;
+}
+
+/* ── Steps ──────────────────────────────────────── */
+.step {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.step:last-of-type { margin-bottom: 0; }
+
+.step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #9146FF;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.step-body { flex: 1; min-width: 0; }
+
+.step-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #f1f5f9;
+  margin-bottom: 6px;
+}
+
+.step-sub {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+
+.step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.step-list li {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+
+.step-list li::before {
+  content: "•";
+  position: absolute;
+  left: 5px;
+  color: #9146FF;
+}
+
+/* ── Auto-detect line ───────────────────────────── */
+.auto-line {
+  font-size: 13px;
+  min-height: 20px;
+  margin-bottom: 6px;
+  transition: color 0.2s;
+}
+
+/* ── Connect row ────────────────────────────────── */
+.connect-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 input[type="text"] {
-  flex: 1; padding: 12px; border-radius: 10px;
-  border: 1px solid #555; background: #1f1f23; color: #eee;
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #3a3a50;
+  background: #1a1a25;
+  color: #eee;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.15s;
 }
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #9146FF;
+}
+
 button {
-  padding: 12px 14px; border: 0; border-radius: 10px;
-  background: #9146FF; color: #fff; cursor: pointer; font-weight: 600;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #9146FF;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s;
 }
+
+button:hover  { background: #a855f7; }
+button:active { background: #7c3aed; }
+
 .btn-secondary {
-  padding: 10px 14px; border: 1px solid #555; border-radius: 10px;
-  background: transparent; color: #ccc; cursor: pointer; font-weight: 600;
+  padding: 8px 14px;
+  border: 1px solid #3a3a50;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
 }
-.btn-secondary:hover { background: rgba(255,255,255,.07); }
-.btn-secondary:disabled { opacity: .5; cursor: default; }
-.muted { color:#aaa; font-size: 14px; }
-.ok { color:#29c770; }
-.err { color:#ff6b6b; }
-.badge { display:inline-block; font-size:12px; padding:2px 6px; border-radius:6px; background:#333; margin-left:6px; }
+
+.btn-secondary:hover    { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+.btn-secondary:disabled { opacity: 0.45; cursor: default; }
+
+/* ── Status colour classes (set by JS) ──────────── */
+.muted { color: #94a3b8; }
+.ok    { color: #34d399; }
+.err   { color: #f87171; }
+
+/* ── Footer line ────────────────────────────────── */
+.footer-line {
+  font-size: 11px;
+  color: #3f3f5a;
+  margin-top: 4px;
+}
