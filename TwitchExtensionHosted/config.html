@@ -10,19 +10,25 @@
   <div class="card">
     <h1>E7 Armory — Config <span id="envBadge" class="badge">loading…</span></h1>
 
+    <p id="roleLine" class="muted"></p>
+
+    <!-- Step 1: auto-detect account from linked Twitch identity -->
+    <p id="autoLine" class="muted"></p>
     <div class="row">
+      <button id="autoBtn" class="btn-secondary">Find My Account</button>
+    </div>
+
+    <!-- Step 2: manual entry / override -->
+    <div class="row" style="margin-top:10px">
       <input id="username" type="text" placeholder="Your E7 Armory username" />
       <button id="saveBtn">Connect Channel</button>
     </div>
 
-    <p id="roleLine" class="muted"></p>
     <p id="status" class="muted">If you can see this, config.html is loading.</p>
   </div>
 
-  <!-- Twitch Extension Helper (required) -->
+  <!-- Twitch Extension Helper (required, must be first script) -->
   <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
-
-  <!-- Your config logic -->
   <script src="./config.js"></script>
 </body>
 </html>
