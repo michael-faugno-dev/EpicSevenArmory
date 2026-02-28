@@ -1,5 +1,5 @@
 // Render API base (Hosted Test / Release)
-var API_BASE = "https://epicsevenarmoryserver-1.onrender.com";
+var API_BASE = "https://epicsevenarmoryserver-87gz.onrender.com";
 
 var helperLoaded = false;
 var authToken = null;

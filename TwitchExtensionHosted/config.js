@@ -1,5 +1,5 @@
 // Render API base (Hosted Test / Release)
-var API_BASE = "https://epicsevenarmoryserver-1.onrender.com";
+var API_BASE = "https://epicsevenarmoryserver-87gz.onrender.com";
 
 var helperLoaded = false;
 var authToken = null;
@@ -21,6 +21,30 @@ function setBadge(text) {
   if (envBadge) envBadge.textContent = text;
 }
 
+// Parse a server response body and return a readable error string.
+function parseErrorBody(body, httpStatus) {
+  try {
+    var j = JSON.parse(body);
+    var msg = j.error || j.error_message || j.message || body;
+    return "HTTP " + httpStatus + ": " + msg;
+  } catch (_) {
+    return "HTTP " + httpStatus + ": " + (body || "(empty)");
+  }
+}
+
+// Fetch with full error detail — resolves with the parsed JSON on success,
+// rejects with a descriptive Error on any non-2xx or network failure.
+function apiFetch(url, opts) {
+  return fetch(url, opts).then(function (resp) {
+    return resp.text().then(function (body) {
+      if (!resp.ok) {
+        throw new Error(parseErrorBody(body, resp.status));
+      }
+      try { return JSON.parse(body); } catch (_) { return body; }
+    });
+  });
+}
+
 try {
   if (window.Twitch && window.Twitch.ext) helperLoaded = true;
 } catch (e) {}
@@ -28,12 +52,6 @@ try {
 if (helperLoaded) {
   setBadge("helper ok");
 
-  // onAuthorized fires when the Twitch extension JWT is ready.
-  // We use it to:
-  //   1. Display the broadcaster's Twitch role and channel ID.
-  //   2. Fetch the current server-side channel→username mapping so the input
-  //      is pre-populated from the DB rather than only from Twitch CDN storage
-  //      (CDN storage can be empty on first load or after a cache clear).
   Twitch.ext.onAuthorized(function (auth) {
     authToken = auth.token;
     channelId = auth.channelId;
@@ -43,43 +61,33 @@ if (helperLoaded) {
 
     setStatus("Checking current configuration…");
 
-    // Fetch current DB mapping for this channel.
-    fetch(API_BASE + "/twitch/channel_config", {
+    apiFetch(API_BASE + "/twitch/channel_config", {
       headers: { Authorization: "Bearer " + authToken },
     })
-      .then(function (r) {
-        return r.json();
-      })
       .then(function (data) {
         if (data && data.username) {
-          // Pre-populate only if the user hasn't already typed something.
-          if (!usernameInput.value) {
-            usernameInput.value = data.username;
-          }
+          if (!usernameInput.value) usernameInput.value = data.username;
           setStatus(
-            "Currently connected to: " +
-              data.username +
-              ". Edit the field and click Connect Channel to update.",
+            "Currently connected to: " + data.username +
+            ". Edit and click Connect Channel to update.",
             "ok"
           );
+        } else if (data && data.error) {
+          setStatus("Server error on load: " + data.error, "err");
         } else {
-          setStatus(
-            "No channel mapped yet. Enter your E7 Armory username and click Connect Channel."
-          );
+          setStatus("No channel mapped yet. Enter your E7 Armory username and click Connect Channel.");
         }
       })
-      .catch(function () {
-        // Server unreachable — fall back to whatever Twitch CDN storage has.
-        setStatus(
-          "Could not reach server. Enter your E7 Armory username and click Connect Channel.",
-          "err"
-        );
+      .catch(function (e) {
+        var msg = String(e.message || e);
+        if (msg.indexOf("Failed to fetch") !== -1) {
+          setStatus("Could not reach server (" + API_BASE + "). Check URL Fetching allowlist.", "err");
+        } else {
+          setStatus("Load error — " + msg, "err");
+        }
       });
   });
 
-  // onChanged fires when the Twitch broadcaster configuration changes (CDN-backed).
-  // We use it as a secondary fallback: if the server fetch above already set the
-  // username, !usernameInput.value will be false and this is a no-op.
   Twitch.ext.configuration.onChanged(function () {
     try {
       var b = Twitch.ext.configuration.broadcaster;
@@ -95,20 +103,7 @@ if (helperLoaded) {
   setBadge("helper NOT loaded");
   roleLine.textContent =
     "Twitch helper did not initialize. Open this from the Twitch 'Configure' button.";
-  setStatus(
-    "Reload the popup. If it persists, check Asset Hosting paths.",
-    "err"
-  );
-}
-
-function mapChannel(username) {
-  var headers = { "Content-Type": "application/json" };
-  if (authToken) headers["Authorization"] = "Bearer " + authToken;
-  return fetch(API_BASE + "/twitch/map_channel", {
-    method: "POST",
-    headers: headers,
-    body: JSON.stringify({ username: username }),
-  });
+  setStatus("Reload the popup. If it persists, check Asset Hosting paths.", "err");
 }
 
 saveBtn.addEventListener("click", function () {
@@ -122,39 +117,34 @@ saveBtn.addEventListener("click", function () {
     return;
   }
   if (!authToken) {
-    setStatus("Not authorized yet. Try again in a moment.", "err");
+    setStatus("Not authorized yet — no token from Twitch. Try reopening the config.", "err");
     return;
   }
 
   setStatus("Connecting channel…");
-  mapChannel(username)
-    .then(function (resp) {
-      if (!resp.ok)
-        return resp.text().then(function (t) {
-          throw new Error("EBS " + resp.status + ": " + t);
-        });
-      // Also persist to Twitch CDN storage as a secondary cache.
+  apiFetch(API_BASE + "/twitch/map_channel", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + authToken,
+    },
+    body: JSON.stringify({ username: username }),
+  })
+    .then(function () {
       try {
-        Twitch.ext.configuration.set(
-          "broadcaster",
-          "1",
-          JSON.stringify({ username: username })
-        );
+        Twitch.ext.configuration.set("broadcaster", "1", JSON.stringify({ username: username }));
       } catch (e) {}
-      setStatus(
-        "Channel connected! Overlay can now read your selected units.",
-        "ok"
-      );
+      setStatus("Channel connected! Overlay can now read your selected units.", "ok");
     })
     .catch(function (e) {
-      console.error(e);
-      if (String(e).indexOf("Failed to fetch") !== -1) {
+      var msg = String(e.message || e);
+      if (msg.indexOf("Failed to fetch") !== -1) {
         setStatus(
-          "Failed to reach API. Confirm URL Fetching allowlist includes your Render domain.",
+          "Could not reach server (" + API_BASE + "). Check URL Fetching allowlist in Twitch Dev Console.",
           "err"
         );
       } else {
-        setStatus(e.message || "Error", "err");
+        setStatus("Connect failed — " + msg, "err");
       }
     });
 });

@@ -226,7 +226,7 @@
 
         async function fetchPossibleUnits() {
             try {
-                const response = await fetch('https://epicsevenarmoryserver-1.onrender.com/your_units', {
+                const response = await fetch('https://epicsevenarmoryserver-87gz.onrender.com/your_units', {
                     method: 'GET',
                     headers: {
                         'Username': username
@@ -246,7 +246,7 @@
 
         async function fetchSelectedUnits() {
             try {
-                const response = await fetch('https://epicsevenarmoryserver-1.onrender.com/get_selected_units_data', {
+                const response = await fetch('https://epicsevenarmoryserver-87gz.onrender.com/get_selected_units_data', {
                     method: 'GET',
                     headers: {
                         'Username': username
@@ -306,7 +306,7 @@
             selectedUnits = [];
             
             try {
-                await fetch('https://epicsevenarmoryserver-1.onrender.com/update_selected_units', {
+                await fetch('https://epicsevenarmoryserver-87gz.onrender.com/update_selected_units', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -333,7 +333,7 @@
             selectedUnits = updatedSelectedUnits;
 
             try {
-                await fetch('https://epicsevenarmoryserver-1.onrender.com/update_selected_units', {
+                await fetch('https://epicsevenarmoryserver-87gz.onrender.com/update_selected_units', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 // ===== Epic Seven Armory — Twitch Overlay JS (drop-in) =====
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API = "https://epicsevenarmoryserver-1.onrender.com";
+const API = "https://epicsevenarmoryserver-87gz.onrender.com";
 const USE_API_IMAGE_CACHE = false; // true => use `${API}/images/hero/<slug>` proxy
 const LOCAL_FALLBACK_USERNAME = "faugnom1"; // local testing (non-Twitch)
 

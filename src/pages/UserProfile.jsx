@@ -19,7 +19,7 @@ import WelcomeModal from '../components/WelcomeModal';
 import SaveConfirmModal from '../components/SaveConfirmModal';
 import { api, API_BASE, getAuthHeaders } from '../api/client';
 
-const LINK_HOST = 'https://epicsevenarmoryserver-1.onrender.com'; // Render (Twitch link flow)
+const LINK_HOST = 'https://epicsevenarmoryserver-87gz.onrender.com'; // Render (Twitch link flow)
 
 // Try Electron shell.openExternal; fall back to window.open.
 function openExternal(url) {
