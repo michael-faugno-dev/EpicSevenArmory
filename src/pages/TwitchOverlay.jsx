@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import "../css/TwitchOverlay.css";
-import { API_BASE, getAuthHeaders } from '../api/client';
+import { api, API_BASE } from '../api/client';
 
 const TwitchOverlay = () => {
   const { selectedUnits, setSelectedUnits, tabImages, setTabImages } = useSidebar();
@@ -28,46 +28,24 @@ const TwitchOverlay = () => {
     fetchSelectedUnits();
   }, [username, navigate]);
 
-  const handleBack = () => {
-    navigate('/overlay')
-  }
-
   const fetchPossibleUnits = async () => {
     try {
-      const response = await fetch(`${API_BASE}/your_units`, {
-        method: 'GET',
-        headers: {
-          'Username': username,
-          ...getAuthHeaders(),
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPossibleUnits(data);
-      } else if (response.status === 404) {
-        console.log("No units found for this user");
-      }
+      const res = await api.get('/your_units', { headers: { Username: username } });
+      setPossibleUnits(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      console.error('Error fetching possible units:', error);
+      if (error?.response?.status !== 404)
+        console.error('Error fetching possible units:', error);
     }
   };
 
   const fetchSelectedUnits = async () => {
     try {
-      const response = await fetch(`${API_BASE}/get_selected_units_data`, {
-        method: 'GET',
-        headers: {
-          'Username': username,
-          ...getAuthHeaders(),
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedUnits(data);
-        if (data.length > 0) {
-          setActiveTab(data[0].unit);
-          data.forEach(unit => fetchUnitImage(unit.unit));
-        }
+      const res = await api.get('/get_selected_units_data', { headers: { Username: username } });
+      const data = Array.isArray(res.data) ? res.data : [];
+      setSelectedUnits(data);
+      if (data.length > 0) {
+        setActiveTab(data[0].unit);
+        data.forEach(unit => fetchUnitImage(unit.unit));
       }
     } catch (error) {
       console.error('Error fetching selected units:', error);
@@ -75,7 +53,14 @@ const TwitchOverlay = () => {
   };
 
   const fetchUnitImage = (unitName) => {
-    const slug = unitName.replace(/ /g, '-').toLowerCase();
+    const slug = String(unitName || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[''`.,/()_]/g, ' ')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
     setTabImages(prevImages => ({ ...prevImages, [unitName]: `${API_BASE}/hero_image/${slug}` }));
   };
 
@@ -91,15 +76,7 @@ const TwitchOverlay = () => {
     setSelectedUnits([]);
   
     try {
-      await fetch(`${API_BASE}/update_selected_units`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Username': username,
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ units: [] })
-      });
+      await api.post('/update_selected_units', { units: [] }, { headers: { Username: username } });
     } catch (error) {
       console.error('Error clearing selected units:', error);
     }
@@ -116,15 +93,10 @@ const TwitchOverlay = () => {
     setSelectedUnits(updatedSelectedUnits);
 
     try {
-      await fetch(`${API_BASE}/update_selected_units`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Username': username,
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ units: updatedSelectedUnits.map(u => ({ id: u._id })) })
-      });
+      await api.post('/update_selected_units',
+        { units: updatedSelectedUnits.map(u => ({ id: u._id })) },
+        { headers: { Username: username } }
+      );
     } catch (error) {
       console.error('Error updating selected units:', error);
     }
@@ -141,7 +113,7 @@ const TwitchOverlay = () => {
   return (
     <>
     <div className='twitch-info'>
-    <h3>This sidebar will display on your twitch.tv stream. Use the checkboxes to select the units to display. The next update will do this automatically.</h3>
+    <h3>Manual override — select up to 4 units to push to your Twitch overlay immediately. Use this if the auto-scan picked the wrong units.</h3>
     </div>
       <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
         <div className="toggle-button" onClick={toggleSidebar}>
@@ -185,8 +157,7 @@ const TwitchOverlay = () => {
         )}
       </div>
       <div id="unit-selector-container">
-        <h3>Select the units you want to display on stream (max 4):</h3>
-        <button onClick={untoggleAll}>Deselect All Units</button>
+        <button className="e7-btn-secondary" onClick={untoggleAll}>Deselect All</button>
         <div id="unit-selector">
           {possibleUnits.map((unit) => (
             <div className="checkbox" key={unit._id}>
@@ -201,12 +172,8 @@ const TwitchOverlay = () => {
               <label htmlFor={`unit-${unit._id}`}>{unit.unit}</label>
             </div>
           ))}
-          <br></br>
         </div>
       </div>
-      <div>
-          <button id="back-button" onClick={handleBack}>Back to Setup Instructions</button>
-        </div>
     </>
   );
 };

@@ -9,6 +9,7 @@
 //     the config JSON file and runs the PKCE desktop OAuth flow (auth/google_native.js).
 //   - Stop any running Python subprocess on app quit.
 const { app, BrowserWindow, Menu, ipcMain, shell, net } = require("electron");
+const http = require("http");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
@@ -16,8 +17,15 @@ const { googleDesktopSignIn } = require("./auth/google_native");
 
 let mainWindow;
 let pythonProcess = null;
+let monitorProcess = null;
+let stdoutBuffer = "";   // carry-forward buffer for partial stdout lines
 let statusCheckInterval = null;
-let monitorEnabled = false;
+
+// Unit scanner (hero stat-screen auto-import)
+let unitScannerProcess = null;
+let unitScanBuffer     = "";
+let unitScanToken      = "";
+let unitScanUsername   = "";
 
 // Use this to compare origins when deciding if a link is external
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
@@ -84,9 +92,6 @@ function createWindow() {
   // Hide default menu
   Menu.setApplicationMenu(null);
 
-  if (!statusCheckInterval) {
-    statusCheckInterval = setInterval(checkMonitorStatus, 1000);
-  }
 }
 
 // ---------- Helper: load Google client credentials from JSON (no env vars) ----------
@@ -206,8 +211,20 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
+// ---------- Stop any running monitor subprocess ----------
+function stopPythonScript() {
+  if (monitorProcess) {
+    try { monitorProcess.kill(); } catch (_) {}
+    monitorProcess = null;
+  }
+}
+
 app.on("will-quit", () => {
   stopPythonScript();
+  if (unitScannerProcess) {
+    try { unitScannerProcess.kill(); } catch (_) {}
+    unitScannerProcess = null;
+  }
   if (statusCheckInterval) clearInterval(statusCheckInterval);
 });
 
@@ -250,6 +267,232 @@ ipcMain.handle("render-api-fetch", (_event, { url, method = "GET", headers = {},
     }
     req.end();
   });
+});
+
+// ---------- Monitor IPC handlers ----------
+// start-monitor: spawns window_monitor.py and forwards its JSON stdout lines
+// to the renderer via 'monitor-status' and 'monitor-result' IPC events.
+ipcMain.handle("start-monitor", () => {
+  if (monitorProcess) {
+    return { ok: false, error: "Monitor already running" };
+  }
+
+  const matcherDir = path.join(__dirname, "backend", "SiftMatching");
+  const monitorScript = path.join(matcherDir, "window_monitor.py");
+  const templatesDir = path.join(matcherDir, "data", "templates");
+
+  try {
+    monitorProcess = spawn("python", [monitorScript, "--templates", templatesDir], {
+      cwd: matcherDir,
+    });
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+
+  stdoutBuffer = "";
+
+  monitorProcess.stdout.on("data", (data) => {
+    stdoutBuffer += data.toString();
+    const lines = stdoutBuffer.split("\n");
+    // Keep the last (potentially incomplete) chunk in the buffer
+    stdoutBuffer = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        const msg = JSON.parse(trimmed);
+        if (!mainWindow || mainWindow.isDestroyed()) continue;
+        if (msg.status === "detected") {
+          mainWindow.webContents.send("monitor-result", msg);
+        } else {
+          mainWindow.webContents.send("monitor-status", msg);
+        }
+      } catch (_) {
+        // non-JSON debug output — ignore
+      }
+    }
+  });
+
+  monitorProcess.stderr.on("data", (data) => {
+    console.error("[monitor stderr]", data.toString());
+  });
+
+  monitorProcess.on("close", () => {
+    monitorProcess = null;
+    stdoutBuffer = "";
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("monitor-status", { status: "stopped" });
+    }
+  });
+
+  return { ok: true };
+});
+
+ipcMain.handle("stop-monitor", () => {
+  stopPythonScript();
+  return { ok: true };
+});
+
+// ── Unit scanner helpers ────────────────────────────────────────────────────
+
+function _postSetStatus(running) {
+  try {
+    const req = net.request({
+      url: "http://127.0.0.1:5000/auto_import/set_status",
+      method: "POST",
+    });
+    req.setHeader("Content-Type", "application/json");
+    req.on("response", () => {});
+    req.on("error", () => {});
+    req.write(JSON.stringify({ running }));
+    req.end();
+  } catch (_) {}
+}
+
+function _postUnitFrame(framePath, winW, winH, chromeX, chromeY) {
+  return new Promise((resolve) => {
+    let imageBuffer;
+    try {
+      imageBuffer = fs.readFileSync(framePath);
+    } catch (e) {
+      return resolve({ ok: false, error: "Cannot read frame: " + e.message });
+    }
+
+    const boundary = "----E7ArmoryBoundary" + Date.now();
+    const CRLF = "\r\n";
+
+    // Build multipart body
+    const parts = [];
+
+    // image field
+    parts.push(
+      "--" + boundary + CRLF +
+      'Content-Disposition: form-data; name="image"; filename="unit_frame.png"' + CRLF +
+      "Content-Type: image/png" + CRLF + CRLF
+    );
+
+    // win_w and win_h as text fields
+    const addField = (name, value) =>
+      "--" + boundary + CRLF +
+      `Content-Disposition: form-data; name="${name}"` + CRLF + CRLF +
+      String(value) + CRLF;
+
+    const prefix = Buffer.from(parts[0]);
+    const suffix = Buffer.from(
+      CRLF +
+      addField("win_w", winW) +
+      addField("win_h", winH) +
+      addField("chrome_x", chromeX || 0) +
+      addField("chrome_y", chromeY || 0) +
+      "--" + boundary + "--" + CRLF
+    );
+
+    const body = Buffer.concat([prefix, imageBuffer, suffix]);
+
+    const req = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: 5000,
+        path: "/auto_import/unit",
+        method: "POST",
+        headers: {
+          "Content-Type":   `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": body.length,
+          "Authorization":  "Bearer " + unitScanToken,
+        },
+      },
+      (resp) => {
+        const chunks = [];
+        resp.on("data", (chunk) => chunks.push(chunk));
+        resp.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          let json = null;
+          try { json = JSON.parse(text); } catch (_) {}
+          resolve({ ok: resp.statusCode >= 200 && resp.statusCode < 300,
+                    status: resp.statusCode, json });
+        });
+      }
+    );
+    req.on("error", (err) => resolve({ ok: false, error: String(err.message || err) }));
+    req.write(body);
+    req.end();
+  });
+}
+
+// ── Unit scanner IPC handlers ───────────────────────────────────────────────
+
+ipcMain.handle("start-unit-scanner", (_e, { token, username } = {}) => {
+  if (unitScannerProcess) {
+    return { ok: false, error: "Unit scanner already running" };
+  }
+
+  unitScanToken    = token    || "";
+  unitScanUsername = username || "";
+
+  const matcherDir    = path.join(__dirname, "backend", "SiftMatching");
+  const scannerScript = path.join(matcherDir, "unit_scanner.py");
+
+  try {
+    unitScannerProcess = spawn("python", [scannerScript], { cwd: matcherDir });
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+
+  unitScanBuffer = "";
+  _postSetStatus(true);
+
+  unitScannerProcess.stdout.on("data", async (data) => {
+    unitScanBuffer += data.toString();
+    const lines = unitScanBuffer.split("\n");
+    unitScanBuffer = lines.pop();
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let msg;
+      try { msg = JSON.parse(trimmed); } catch (_) { continue; }
+
+      if (!mainWindow || mainWindow.isDestroyed()) continue;
+
+      if (msg.status === "captured") {
+        // Forward status first so UI shows detecting indicator
+        mainWindow.webContents.send("unit-scanner-status", msg);
+
+        // POST frame to Flask — resolve path relative to the scanner's cwd
+        const framePath = path.resolve(matcherDir, msg.path);
+        const result = await _postUnitFrame(framePath, msg.win_w || 1998, msg.win_h || 1161, msg.chrome_x || 0, msg.chrome_y || 0);
+        try { fs.unlinkSync(framePath); } catch (_) {}
+        mainWindow.webContents.send("unit-import-result", result.json || { ok: false, error: result.error });
+      } else {
+        mainWindow.webContents.send("unit-scanner-status", msg);
+      }
+    }
+  });
+
+  unitScannerProcess.stderr.on("data", (data) => {
+    console.error("[unit-scanner stderr]", data.toString());
+  });
+
+  unitScannerProcess.on("close", () => {
+    unitScannerProcess = null;
+    unitScanBuffer = "";
+    _postSetStatus(false);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("unit-scanner-status", { status: "stopped" });
+    }
+  });
+
+  return { ok: true };
+});
+
+ipcMain.handle("stop-unit-scanner", () => {
+  if (unitScannerProcess) {
+    try { unitScannerProcess.kill(); } catch (_) {}
+    unitScannerProcess = null;
+    unitScanBuffer = "";
+  }
+  _postSetStatus(false);
+  return { ok: true };
 });
 
 // IPC handler for Google sign-in. Called by the renderer via window.api.googleSignIn().

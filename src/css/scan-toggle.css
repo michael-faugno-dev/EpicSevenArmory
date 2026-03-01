@@ -57,3 +57,51 @@
 
 /* Disabled visual */
 .scan-toggle:disabled { opacity: .6; cursor: default; }
+
+/* Detection result toast — fixed overlay so it escapes the 44px header */
+.scan-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ok);
+  background: #0f1115;
+  border: 1px solid color-mix(in oklab, var(--ok) 40%, transparent);
+  border-radius: 8px;
+  padding: 10px 16px;
+  max-width: 340px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  animation: toast-fade-in .2s ease;
+  pointer-events: none;
+}
+
+@keyframes toast-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Detecting variant — neutral blue while SIFT is running */
+.scan-toast--detecting {
+  color: #93c5fd;
+  border-color: color-mix(in oklab, #93c5fd 40%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scan-toast__pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #93c5fd;
+  flex-shrink: 0;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}

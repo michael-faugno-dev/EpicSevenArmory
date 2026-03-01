@@ -1,97 +1,132 @@
 // src/components/ScanToggle.jsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+//
+// Toggle button that starts/stops the Python window monitor subprocess via
+// Electron IPC. When a draft screen is detected the results are POSTed to
+// /scan/result which updates selected_units so the Twitch overlay refreshes
+// automatically.
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
-const LOOP_INTERVAL_MS = 600; // capture cadence while ON (tweak 300–1000ms)
+const TOAST_DURATION_MS = 7000;
 
 export default function ScanToggle() {
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [found, setFound] = useState(false);           // Epic Seven window found? (i.e., capture succeeded)
-  const [detected, setDetected] = useState(null);      // latest matcher results (array) or null
-  const [msg, setMsg] = useState('');                  // tiny status hint
+  const [found, setFound] = useState(false);       // Epic Seven window found?
+  const [toast, setToast] = useState('');           // latest detection result message
+  const [detecting, setDetecting] = useState(false); // SIFT is running
+  const [gateInfo, setGateInfo] = useState('');     // "Gate: 0.XX  1280×720"
 
-  const loopRef = useRef(null);                        // interval id
-  const stopRequestedRef = useRef(false);
+  const cleanupStatusRef = useRef(null);
+  const cleanupResultRef = useRef(null);
+  const toastTimerRef    = useRef(null);
 
   useEffect(() => {
     return () => {
-      if (loopRef.current) clearInterval(loopRef.current);
-      loopRef.current = null;
-      stopRequestedRef.current = true;
+      if (cleanupStatusRef.current) cleanupStatusRef.current();
+      if (cleanupResultRef.current) cleanupResultRef.current();
+      if (toastTimerRef.current)    clearTimeout(toastTimerRef.current);
     };
   }, []);
 
-  const stepOnce = useCallback(async () => {
-    if (!window.api || typeof window.api.captureEpicSevenOnce !== 'function') {
-      setFound(false);
-      setMsg('Missing captureEpicSevenOnce API');
-      return;
-    }
-
-    let blob;
-    try {
-      blob = await window.api.captureEpicSevenOnce(); // window→screen+crop fallback is inside
-      setFound(true);
-      setMsg('');
-    } catch (e) {
-      setFound(false);
-      setDetected(null);
-      setMsg(String(e?.message || e || 'Capture failed'));
-      return;
-    }
-
-    try {
-      const form = new FormData();
-      form.append('screen', blob, 'frame.png');
-
-      const res = await fetch(`${API_BASE}/detect-once`, {
-        method: 'POST',
-        body: form
-      });
-
-      if (!res.ok) {
-        setMsg(`detect-once ${res.status}`);
-        return;
-      }
-
-      const data = await res.json();
-      const results = Array.isArray(data?.results) ? data.results : data?.results?.results;
-
-      if (Array.isArray(results)) {
-        setDetected(results);
-
-        const fourClean = results.filter(r => r && !r.banned && r.best).slice(0, 4);
-        if (fourClean.length === 4) {
-          setMsg(`Matched 4: ${fourClean.map(r => r.best).join(', ')}`);
-        } else {
-          setMsg('Scanning…');
-        }
-      } else {
-        setDetected(null);
-        setMsg('No results');
-      }
-    } catch (e) {
-      setMsg('detect-once failed');
-    }
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(''), TOAST_DURATION_MS);
   }, []);
 
-  const startLoop = useCallback(() => {
-    stopRequestedRef.current = false;
-    if (loopRef.current) clearInterval(loopRef.current);
-    void stepOnce(); // immediate kick
-    loopRef.current = setInterval(() => {
-      if (stopRequestedRef.current) return;
-      void stepOnce();
-    }, LOOP_INTERVAL_MS);
-  }, [stepOnce]);
+  const handleMonitorStatus = useCallback((msg) => {
+    if (msg.status === 'window_found') {
+      setFound(true);
+      if (msg.win_w && msg.win_h) {
+        setGateInfo(`${msg.win_w}×${msg.win_h}`);
+      }
+    } else if (msg.status === 'window_minimized') {
+      setFound(true); // window exists and is being captured via PrintWindow
+      setGateInfo(`Minimized (${msg.win_w}×${msg.win_h})`);
+    } else if (msg.status === 'gate_score') {
+      setGateInfo(`Gate: ${msg.score.toFixed(2)}  ${msg.win_w}×${msg.win_h}`);
+    } else if (msg.status === 'triggered') {
+      setGateInfo('Detecting…');
+      setDetecting(true);
+    } else if (msg.status === 'window_not_found' || msg.status === 'stopped') {
+      setFound(false);
+      setGateInfo('');
+      setDetecting(false);
+    } else if (msg.status === 'detection_error') {
+      showToast(`Detection error: ${msg.msg}`);
+    }
+  }, [showToast]);
 
-  const stopLoop = useCallback(() => {
-    stopRequestedRef.current = true;
-    if (loopRef.current) clearInterval(loopRef.current);
-    loopRef.current = null;
+  const handleMonitorResult = useCallback(async (data) => {
+    setDetecting(false);
+    const slugs = Array.isArray(data.clean) ? data.clean : [];
+    if (slugs.length === 0) {
+      showToast('Scan ran but found no heroes — check ROI calibration');
+      return;
+    }
+
+    const token    = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    if (!token || !username) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/scan/result`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Username': username,
+        },
+        body: JSON.stringify({ slugs }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const savedNames = data.saved_names || [];
+        const unmatched = data.unmatched || [];
+        if (savedNames.length > 0 && unmatched.length === 0) {
+          showToast(`Detected: ${savedNames.join(', ')}`);
+        } else if (savedNames.length > 0) {
+          showToast(`Detected: ${savedNames.join(', ')} — not in roster: ${unmatched.join(', ')}`);
+        } else {
+          showToast(`No roster match for: ${unmatched.join(', ')}`);
+        }
+      } else {
+        showToast('Save failed — check units are in your roster');
+      }
+    } catch {
+      showToast('Save failed — backend not reachable');
+    }
+  }, [showToast]);
+
+  const startScanning = useCallback(async () => {
+    if (!window.api?.startMonitor) {
+      showToast('Monitor API not available');
+      return;
+    }
+
+    const result = await window.api.startMonitor();
+    if (!result?.ok) {
+      showToast(result?.error || 'Failed to start monitor');
+      return;
+    }
+
+    cleanupStatusRef.current = window.api.onMonitorStatus(handleMonitorStatus);
+    cleanupResultRef.current = window.api.onMonitorResult(handleMonitorResult);
+  }, [handleMonitorStatus, handleMonitorResult, showToast]);
+
+  const stopScanning = useCallback(async () => {
+    if (cleanupStatusRef.current) { cleanupStatusRef.current(); cleanupStatusRef.current = null; }
+    if (cleanupResultRef.current) { cleanupResultRef.current(); cleanupResultRef.current = null; }
+
+    if (window.api?.stopMonitor) {
+      await window.api.stopMonitor();
+    }
+
     setFound(false);
-    setMsg('');
+    setGateInfo('');
+    setDetecting(false);
   }, []);
 
   const toggle = async () => {
@@ -100,10 +135,10 @@ export default function ScanToggle() {
     try {
       if (!on) {
         setOn(true);
-        startLoop();
+        await startScanning();
       } else {
         setOn(false);
-        stopLoop();
+        await stopScanning();
       }
     } finally {
       setBusy(false);
@@ -113,39 +148,49 @@ export default function ScanToggle() {
   const stateClass = on ? (found ? 'is-on ok' : 'is-on warn') : '';
 
   return (
-    <button
-      className={`scan-toggle ${stateClass}`}
-      onClick={toggle}
-      disabled={busy}
-      title={
-        on
-          ? (found ? 'Scanning Epic Seven window (found)' : 'Scanning Epic Seven window (not found)')
-          : 'Start scanning Epic Seven window'
-      }
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px' }}
-    >
-      <span className={`dot ${found ? 'ok' : (on ? 'warn' : '')}`} />
-      <span className="label">
-        {on ? (
-          <>
-            Scanning:{' '}
-            <span className="status">
-              {found ? (
-                <span className="status-ok">Window Found</span>
-              ) : (
-                <span className="status-warn">Window Not Found</span>
-              )}
-            </span>
-          </>
-        ) : (
-          'Scan Off'
-        )}
-      </span>
-      {on && (
-        <span className="hint" style={{ marginLeft: 8, fontSize: 12, opacity: 0.8 }}>
-          {msg}
+    <>
+      <button
+        className={`scan-toggle ${stateClass}`}
+        onClick={toggle}
+        disabled={busy}
+        title={
+          on
+            ? (found ? 'RTA Scan — Epic Seven window found' : 'RTA Scan — Epic Seven window not found')
+            : 'Start RTA draft screen scanning'
+        }
+      >
+        <span className={`dot ${found ? 'ok' : (on ? 'warn' : '')}`} />
+        <span className="label">
+          {on ? (
+            <>
+              RTA Scan:{' '}
+              <span className="status">
+                {found
+                  ? <span className="status-ok">Window Found</span>
+                  : <span className="status-warn">Window Not Found</span>
+                }
+              </span>
+            </>
+          ) : (
+            'RTA Scan Off'
+          )}
         </span>
+        {on && found && gateInfo && (
+          <span style={{ fontSize: 10, opacity: 0.65, marginLeft: 6 }}>{gateInfo}</span>
+        )}
+      </button>
+
+      {detecting && !toast && (
+        <div className="scan-toast scan-toast--detecting">
+          <span className="scan-toast__pulse" /> Analyzing draft screen…
+        </div>
       )}
-    </button>
+
+      {toast && (
+        <div className="scan-toast">
+          {toast}
+        </div>
+      )}
+    </>
   );
 }

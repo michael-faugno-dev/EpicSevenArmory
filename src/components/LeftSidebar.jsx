@@ -2,8 +2,6 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const OVERLAY_SETUP_KEY = 'e7-overlay-setup-complete';
-
 export default function LeftSidebar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -12,12 +10,6 @@ export default function LeftSidebar() {
     try { logout(); } catch {}
     navigate('/login', { replace: true });
   };
-
-  // Only needed when logged in
-  const overlayTarget =
-    (typeof window !== 'undefined' && localStorage.getItem(OVERLAY_SETUP_KEY) === 'true')
-      ? '/overlay/live'
-      : '/overlay';
 
   return (
     <aside className="e7-sidebar">
@@ -28,18 +20,17 @@ export default function LeftSidebar() {
           <nav className="e7-nav">
             <ul className="e7-list">
               <li><NavLink to="/your_units" className="e7-link">Your Units</NavLink></li>
-              <li><NavLink to="/upload" className="e7-link">Upload Unit</NavLink></li>
-              <li><NavLink to="/unit_lookup" className="e7-link">Unit Look Up</NavLink></li>
-              {/* Twitch Overlay visible only when logged in */}
-              {/* <li><NavLink to="/upload-draft" className="e7-link">Upload Draft</NavLink></li> */}
-              <li><NavLink to={overlayTarget} className="e7-link">Twitch Overlay</NavLink></li>
-              {/* <li><NavLink to="/auto-import-log" className="e7-link">Import Log</NavLink></li> */}
+              <li><NavLink to="/upload" className="e7-link">Upload Unit Screenshot</NavLink></li>
+              <li><NavLink to="/unit_lookup" className="e7-link">Hero Library</NavLink></li>
+              <li><NavLink to="/overlay/live" className="e7-link">Twitch Overlay</NavLink></li>
+              <li><NavLink to="/auto-import-log" className="e7-link">Import Log</NavLink></li>
             </ul>
           </nav>
 
-          {/* Lower section: About + Buy Me a Coffee + Logout */}
+          {/* Lower section: Twitch Setup + About + Buy Me a Coffee + Logout */}
           <div className="e7-nav e7-nav--lower">
             <ul className="e7-list">
+              <li><NavLink to="/overlay" className="e7-link">Twitch Overlay Setup</NavLink></li>
               <li><NavLink to="/about" className="e7-link">About</NavLink></li>
               <li>
                 <a

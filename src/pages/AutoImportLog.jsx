@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const API = "http://localhost:5000";
 
@@ -25,7 +25,7 @@ function pillColor(type) {
 export default function AutoImportLog() {
   const [events, setEvents] = useState([]);
   const [status, setStatus] = useState({});
-  const username = localStorage.getItem("epic_seven_account") || "";
+  const username = localStorage.getItem("username") || "";
 
   async function fetchData() {
     try {
@@ -39,7 +39,14 @@ export default function AutoImportLog() {
   }
 
   useEffect(() => { fetchData(); }, []);
-  useInterval(fetchData, 3000); // every 3s
+  useInterval(fetchData, status.hero_scanner_running ? 3000 : null);
+
+  // Refresh immediately when a unit is imported (no polling delay)
+  useEffect(() => {
+    if (!window.api?.onUnitImportResult) return;
+    const cleanup = window.api.onUnitImportResult(() => fetchData());
+    return cleanup;
+  }, []);
 
   return (
     <div className="p-4 space-y-4">

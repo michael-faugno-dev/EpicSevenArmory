@@ -144,6 +144,19 @@ def _serve(fname: str):
     folder = _hero_dir()
     return send_from_directory(str(folder), fname, mimetype="image/png", max_age=86400)
 
+def _serve_placeholder():
+    """Return Aither's portrait as a stand-in when no matching image can be found.
+    Tries the local cache first, then falls back to Epic7DB the same way as any other hero.
+    Returns a Flask response or None if Aither itself cannot be located.
+    """
+    fname = _find_best_filename("aither")
+    if fname:
+        return _serve(fname)
+    fetched = _fallback_fetch_and_cache("aither")
+    if fetched:
+        return _serve(fetched)
+    return None
+
 @HERO_BP.route("/hero_image/<slug>", methods=["GET"])
 def hero_image_by_slug(slug: str):
     slug = _slugify(slug)
@@ -155,7 +168,10 @@ def hero_image_by_slug(slug: str):
         fetched = _fallback_fetch_and_cache(slug)
         if fetched:
             return _serve(fetched)
-        current_app.logger.info(f"[hero_image] not found slug='{slug}' folder='{folder}'")
+        current_app.logger.info(f"[hero_image] not found slug='{slug}', serving placeholder")
+        placeholder = _serve_placeholder()
+        if placeholder:
+            return placeholder
         return jsonify({"success": False, "error": "not_found", "slug": slug, "folder": str(folder)}), 404
 
     return _serve(fname)
@@ -171,7 +187,10 @@ def hero_image_by_unit():
         fetched = _fallback_fetch_and_cache(slug)
         if fetched:
             return _serve(fetched)
-        current_app.logger.info(f"[hero_image_by_unit] not found unit='{unit}' slug='{slug}' folder='{folder}'")
+        current_app.logger.info(f"[hero_image_by_unit] not found unit='{unit}', serving placeholder")
+        placeholder = _serve_placeholder()
+        if placeholder:
+            return placeholder
         return jsonify({"success": False, "error": "not_found", "unit": unit, "slug": slug, "folder": str(folder)}), 404
 
     return _serve(fname)

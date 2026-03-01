@@ -35,4 +35,50 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("update-available", listener);
     return () => ipcRenderer.removeListener("update-available", listener);
   },
+
+  // ---------- Live window monitor ----------
+  // Start the Python window monitor subprocess. Resolves with { ok, error }.
+  startMonitor: () => ipcRenderer.invoke("start-monitor"),
+
+  // Stop the running monitor subprocess. Resolves with { ok }.
+  stopMonitor: () => ipcRenderer.invoke("stop-monitor"),
+
+  // Subscribe to window-status events (window_found, window_not_found, stopped, …).
+  // Returns a cleanup function — call it on component unmount.
+  onMonitorStatus: (handler) => {
+    const listener = (_event, data) => handler(data);
+    ipcRenderer.on("monitor-status", listener);
+    return () => ipcRenderer.removeListener("monitor-status", listener);
+  },
+
+  // Subscribe to detection results ({ status: "detected", clean: [...], banned }).
+  // Returns a cleanup function — call it on component unmount.
+  onMonitorResult: (handler) => {
+    const listener = (_event, data) => handler(data);
+    ipcRenderer.on("monitor-result", listener);
+    return () => ipcRenderer.removeListener("monitor-result", listener);
+  },
+
+  // ---------- Unit auto-import scanner ----------
+  // Start the hero stat-screen monitor. token + username are passed so main.js
+  // can POST captured frames to Flask on behalf of the logged-in user.
+  startUnitScanner: (token, username) =>
+    ipcRenderer.invoke("start-unit-scanner", { token, username }),
+
+  // Stop the unit scanner subprocess.
+  stopUnitScanner: () => ipcRenderer.invoke("stop-unit-scanner"),
+
+  // Subscribe to unit scanner status events (window_found, capturing, stopped, …).
+  onUnitScannerStatus: (handler) => {
+    const listener = (_event, data) => handler(data);
+    ipcRenderer.on("unit-scanner-status", listener);
+    return () => ipcRenderer.removeListener("unit-scanner-status", listener);
+  },
+
+  // Subscribe to import results ({ ok, event_type, hero_name, cp } or error).
+  onUnitImportResult: (handler) => {
+    const listener = (_event, data) => handler(data);
+    ipcRenderer.on("unit-import-result", listener);
+    return () => ipcRenderer.removeListener("unit-import-result", listener);
+  },
 });

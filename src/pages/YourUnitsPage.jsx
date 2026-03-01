@@ -24,7 +24,7 @@ function slugify(name) {
   return String(name || '')
     .trim()
     .toLowerCase()
-    .replace(/[’'`.,/()_]/g, ' ')
+    .replace(/[''`.,/()_]/g, ' ')
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9\-]/g, '')
     .replace(/-+/g, '-')
@@ -125,11 +125,20 @@ export default function YourUnitsPage() {
 
   const [editIds, setEditIds] = useState(() => new Set());
   const [editMap, setEditMap] = useState({});     // id -> field map
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [sort, setSort] = useState(() => localStorage.getItem('e7a_sort') || 'name');
 
   const username =
     localStorage.getItem('username') ||
     parseJwtUsername() ||
     '';
+
+  // Re-fetch when a unit is auto-imported
+  useEffect(() => {
+    if (!window.api?.onUnitImportResult) return;
+    const cleanup = window.api.onUnitImportResult(() => setRefreshKey(k => k + 1));
+    return cleanup;
+  }, []);
 
   // fetch units
   useEffect(() => {
@@ -166,7 +175,7 @@ export default function YourUnitsPage() {
 
     fetchUnits();
     return () => { mounted = false; };
-  }, [username]);
+  }, [username, refreshKey]);
 
   const toggleOpen = (id) => {
     setOpenIds(prev => {
@@ -332,12 +341,39 @@ export default function YourUnitsPage() {
 
       {units.length === 0 ? (
         <div style={{ opacity: .85 }}>
-          No units found. If you just uploaded, confirm the document’s
-          <code> uploaded_by</code> matches <code>{username}</code>.
+          No units yet — turn on <strong>Hero Import</strong> in the header and browse to any hero's
+          stat screen in-game to get started.
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 10 }}>
-          {units.map((u, i) => {
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 13, opacity: 0.6 }}>Sort:</span>
+            {[
+              { key: 'name',     label: 'Name' },
+              { key: 'cp_desc',  label: 'CP ↓' },
+              { key: 'cp_asc',   label: 'CP ↑' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => { localStorage.setItem('e7a_sort', key); setSort(key); }}
+                style={{
+                  fontSize: 12, padding: '3px 10px', borderRadius: 6, cursor: 'pointer',
+                  border: sort === key ? '1px solid rgba(145,100,230,.7)' : '1px solid rgba(255,255,255,.15)',
+                  background: sort === key ? 'rgba(145,100,230,.2)' : 'transparent',
+                  color: sort === key ? '#c9a0ff' : 'inherit',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {[...units].sort((a, b) => {
+            if (sort === 'name') return (a.unit || '').localeCompare(b.unit || '');
+            const parseCP = (u) => Number(String(u.cp ?? u.power ?? u.combat_power ?? 0).replace(/,/g, '').replace(/%/g, '')) || 0;
+            const ca = parseCP(a);
+            const cb = parseCP(b);
+            return sort === 'cp_desc' ? cb - ca : ca - cb;
+          }).map((u, i) => {
             const id = String(u._id || u.id || i);
             const unitName = u.unit || u.name || u.unit_name || 'Unknown Unit';
             const cp = u.cp ?? u.power ?? u.combat_power ?? '—';
@@ -426,7 +462,7 @@ export default function YourUnitsPage() {
                               color: '#bfdbfe',
                               cursor: 'pointer',
                             }}
-                            title="Edit this unit’s stats"
+                            title="Edit this unit's stats"
                           >
                             Edit stats
                           </button>

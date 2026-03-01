@@ -50,7 +50,7 @@ export default function UnitLookupPage() {
 
   return (
     <div>
-      <h2 style={{ marginTop: 0, marginBottom: 10 }}>Unit Lookup</h2>
+      <h2 style={{ marginTop: 0, marginBottom: 10 }}>Hero Library</h2>
 
       {loading ? (
         <div style={{ padding: 16 }}>Loading unit list…</div>
@@ -90,6 +90,15 @@ export default function UnitLookupPage() {
               Search
             </button>
           </div>
+
+          <p style={{ marginTop: 14, marginBottom: 0, fontSize: 13, color: "#c9a0ff" }}>
+            Tip: Very recently released heroes may not yet appear in the list. The hero roster is
+            pulled from Smilegate's official API, which can lag behind new game releases by days or
+            weeks. Missing heroes are added manually as they are discovered — report any in the{" "}
+            <a href="https://discord.gg/gTMhrbVxkN" target="_blank" rel="noopener noreferrer">
+              Discord
+            </a>.
+          </p>
         </form>
       )}
     </div>

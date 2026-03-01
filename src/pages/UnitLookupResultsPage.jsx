@@ -77,7 +77,7 @@ export default function UnitLookupResultsPage() {
     return (
       <div>
         <button className="btn btn-link mb-3" onClick={() => navigate("/unit_lookup")}>
-          ← Back to Lookup
+          ← Back to Hero Library
         </button>
         <div style={{ padding: 16 }}>Loading…</div>
       </div>
@@ -88,7 +88,7 @@ export default function UnitLookupResultsPage() {
     return (
       <div>
         <button className="btn btn-link mb-3" onClick={() => navigate("/unit_lookup")}>
-          ← Back to Lookup
+          ← Back to Hero Library
         </button>
         <div
           style={{
@@ -108,7 +108,7 @@ export default function UnitLookupResultsPage() {
     return (
       <div>
         <button className="btn btn-link mb-3" onClick={() => navigate("/unit_lookup")}>
-          ← Back to Lookup
+          ← Back to Hero Library
         </button>
         <div className="alert alert-warning">No data for this unit.</div>
       </div>
@@ -118,7 +118,7 @@ export default function UnitLookupResultsPage() {
   return (
     <div>
       <button className="btn btn-link mb-3" onClick={() => navigate("/unit_lookup")}>
-        ← Back to Lookup
+        ← Back to Hero Library
       </button>
 
       <div style={cardStyle}>

@@ -83,7 +83,11 @@ def _is_electron_origin(origin: str) -> bool:
     return not origin or origin == "null"
 
 from routes_detect import bp as detect_bp
+from routes_scan import scan_bp
+from routes_auto_import import auto_import_bp
 app.register_blueprint(detect_bp)
+app.register_blueprint(scan_bp)
+app.register_blueprint(auto_import_bp)
 
 @app.before_request
 def attach_db():
@@ -236,18 +240,30 @@ def correct_name(extracted_name, choices):
     """
     Fuzzy-match an OCR-extracted name to the closest official hero name.
 
-    Uses token_set_ratio which handles word order differences well (e.g.
-    "Luna New Moon" vs "New Moon Luna"). On a tie, prefers the longer name
-    to avoid matching short common words. Returns None if confidence < 80.
+    Uses token_set_ratio (word-order tolerant) weighted by a length-similarity
+    factor so that a short fragment like "sharun" cannot score equally against
+    both "Sharun" and the longer "Dragon King Sharun".  Returns None if the
+    best adjusted score is below 80.
+
+    An additional len_ratio guard rejects matches where the canonical name is
+    much shorter than the OCR text (ratio < 0.5).  This prevents base-form names
+    like "Celine" from winning over an unlisted alt-form like "Spirit Eye Celine".
+    The guard is bypassed when confidence is very high (≥ 96) so short-name typos
+    (e.g. "Celin" → "Celine") are still corrected.
     """
     best_match = None
     best_score = 0
+    best_len_ratio = 0
+    ext_len = len(extracted_name) or 1
     for choice in choices:
-        score = fuzz.token_set_ratio(extracted_name, choice)
+        ts = fuzz.token_set_ratio(extracted_name, choice)
+        len_ratio = min(ext_len, len(choice)) / max(ext_len, len(choice)) if choice else 0
+        score = ts * (0.8 + 0.2 * len_ratio)
         if score > best_score or (score == best_score and len(choice) > len(best_match or '')):
             best_score = score
             best_match = choice
-    if best_score > 80:
+            best_len_ratio = len_ratio
+    if best_score >= 80 and (best_len_ratio >= 0.5 or best_score >= 96):
         return best_match
     return None
 
@@ -276,8 +292,7 @@ def process_image(image, username, rta_rank):
     """
     Extract hero stats from an Epic Seven unit info screenshot using OCR.
 
-    Pixel coordinates below are calibrated for the standard 1440×2960 screenshot
-    resolution exported from the in-game unit detail screen. Different device
+    Different device
     resolutions will require adjusting these regions.
     """
     regions = {
@@ -311,12 +326,29 @@ def process_image(image, username, rta_rank):
         unit_name = clean_unit_name(stats['unit']).lower()
         # Hard-coded corrections for heroes whose names are consistently
         # misread by Tesseract due to unusual glyphs in the game font.
+        # Heroes released after the Smilegate API was last updated.
+        HERO_OVERRIDES = [
+            "Aki",
+            "Dragon King Sharun",
+            "Hecate",
+            "Lady of the Scales",
+            "Monarch of the Sword Iseria",
+            "Ruiza",
+            "Shepherd of the Dark Diene",
+            "Spirit Eye Celine",
+        ]
+        all_names = list(correct_unit_names) + [h for h in HERO_OVERRIDES if h not in correct_unit_names]
+
         if "draaon bride senva" in unit_name:
             stats['unit'] = "Dragon Bride Senya"
+        elif "lady of the" in unit_name:
+            # OCR misreads the decorative artwork behind this hero's name plate.
+            # Any read that starts with "lady of the" is reliably this unit.
+            stats['unit'] = "Lady of the Scales"
         elif "new moon luna" in unit_name:
             stats['unit'] = "New Moon Luna"
         else:
-            corrected_name = correct_name(unit_name, correct_unit_names)
+            corrected_name = correct_name(unit_name, all_names)
             if corrected_name:
                 stats['unit'] = corrected_name
             else:
