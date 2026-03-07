@@ -9,6 +9,7 @@ export default function LeftSidebar() {
   const [twitchLogin, setTwitchLogin] = useState(null);
 
   useEffect(() => {
+    setTwitchLogin(null);
     if (!isAuthenticated || !user?.username) return;
     api.get(`/profile?username=${encodeURIComponent(user.username)}`)
       .then(res => {
@@ -19,6 +20,7 @@ export default function LeftSidebar() {
   }, [isAuthenticated, user?.username]);
 
   const handleLogout = () => {
+    if (!window.confirm("Are you sure you want to log out?")) return;
     try { logout(); } catch {}
     navigate('/login', { replace: true });
   };

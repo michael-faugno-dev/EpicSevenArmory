@@ -14,13 +14,47 @@ function useInterval(callback, delay) {
 
 function pillColor(type) {
   switch (type) {
-    case "added": return "#16a34a";      // green
-    case "updated": return "#2563eb";    // blue
-    case "duplicate": return "#6b7280";  // gray
-    case "error": return "#dc2626";      // red
-    default: return "#f59e0b";           // orange
+    case "added":     return "#16a34a";
+    case "updated":   return "#2563eb";
+    case "duplicate": return "#6b7280";
+    case "error":     return "#dc2626";
+    default:          return "#f59e0b";
   }
 }
+
+const card = {
+  border: "1px solid rgba(255,255,255,.08)",
+  borderRadius: 12,
+  background: "rgba(255,255,255,.03)",
+  padding: "20px 24px",
+};
+
+const tableCard = {
+  border: "1px solid rgba(255,255,255,.08)",
+  borderRadius: 12,
+  background: "rgba(255,255,255,.03)",
+  overflow: "hidden",
+};
+
+const thStyle = {
+  padding: "10px 16px",
+  textAlign: "left",
+  fontSize: 13,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  opacity: 0.5,
+  whiteSpace: "nowrap",
+  borderBottom: "1px solid rgba(255,255,255,.08)",
+  background: "rgba(255,255,255,.03)",
+};
+
+const tdStyle = {
+  padding: "11px 16px",
+  fontSize: 15,
+  borderBottom: "1px solid rgba(255,255,255,.06)",
+  color: "var(--text)",
+};
 
 export default function AutoImportLog() {
   const [events, setEvents] = useState([]);
@@ -48,107 +82,173 @@ export default function AutoImportLog() {
     return cleanup;
   }, []);
 
-  function exportCSV() {
-    const headers = ["Time", "Event", "Hero", "CP", "Resolution", "Raw OCR", "Note"];
-    const rows = events.map(e => [
-      new Date(e.ts).toLocaleString(),
-      e.event_type,
-      e.hero_name,
-      e.cp ?? "",
-      e.resolution || "",
-      e.raw_ocr || "",
-      e.message || "",
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `import-log-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function exportCSV() {
+    try {
+      const ev = await fetch(`${API}/scan_events?username=${encodeURIComponent(username)}&all=1`).then(r => r.json());
+      const all = ev?.events ?? [];
+      const headers = ["Time", "Event", "Hero", "CP", "Resolution", "Raw OCR", "Note"];
+      const rows = all.map(e => [
+        new Date(e.ts).toLocaleString(),
+        e.event_type,
+        e.hero_name,
+        e.cp ?? "",
+        e.resolution || "",
+        e.raw_ocr || "",
+        e.message || "",
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `import-log-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  async function clearLog() {
+    if (!window.confirm("Delete all scan events? This cannot be undone.")) return;
+    try {
+      await fetch(`${API}/scan_events?username=${encodeURIComponent(username)}`, { method: "DELETE" });
+      setEvents([]);
+    } catch (e) {
+      // ignore
+    }
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="rounded-xl p-4 shadow bg-white dark:bg-zinc-900">
-        <div className="flex items-center justify-between gap-4">
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Header */}
+      <div style={card}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
-            <h1 className="text-xl font-semibold">Auto-Import Log</h1>
-            <p className="text-sm opacity-80">
-              Scans the Hero screen and auto-adds units after ~2s on a hero.
-              <strong> For now, each account supports only one instance per hero.</strong>
+            <h1 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 600 }}>Auto-Import Log</h1>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.65 }}>
+              Scans the Hero screen and auto-adds units after ~2s on a hero.{" "}
+              <strong style={{ opacity: 0.9 }}>Each account supports only one entry per hero.</strong>
             </p>
           </div>
-          <div className="flex items-center gap-3 text-sm">
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
             <button
               onClick={exportCSV}
               disabled={events.length === 0}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              style={{
+                background: "none",
+                border: "1px solid rgba(255,255,255,.2)",
+                borderRadius: 8,
+                color: "var(--text)",
+                cursor: events.length === 0 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                opacity: events.length === 0 ? 0.35 : 1,
+                padding: "6px 14px",
+                transition: "opacity .15s",
+              }}
             >
               Export CSV
             </button>
-            <span>
+            <button
+              onClick={clearLog}
+              disabled={events.length === 0}
+              style={{
+                background: "none",
+                border: "1px solid rgba(248,113,113,.35)",
+                borderRadius: 8,
+                color: "#f87171",
+                cursor: events.length === 0 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                opacity: events.length === 0 ? 0.35 : 1,
+                padding: "6px 14px",
+                transition: "opacity .15s",
+              }}
+            >
+              Clear Log
+            </button>
+            <div style={{ fontSize: 13, opacity: 0.8 }}>
               Scanner:{" "}
-              <span
-                className="px-2 py-1 rounded-full"
-                style={{
-                  background: status.hero_scanner_running ? "#dcfce7" : "#fee2e2",
-                  color: status.hero_scanner_running ? "#166534" : "#991b1b",
-                }}
-              >
+              <span style={{
+                marginLeft: 4,
+                padding: "3px 10px",
+                borderRadius: 99,
+                fontSize: 12,
+                fontWeight: 600,
+                background: status.hero_scanner_running ? "rgba(22,163,74,.2)" : "rgba(220,38,38,.15)",
+                color: status.hero_scanner_running ? "#4ade80" : "#f87171",
+                border: `1px solid ${status.hero_scanner_running ? "rgba(74,222,128,.25)" : "rgba(248,113,113,.25)"}`,
+              }}>
                 {status.hero_scanner_running ? "Running" : "Stopped"}
               </span>
-            </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl shadow bg-white dark:bg-zinc-900 overflow-hidden">
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm">
+      {/* Table */}
+      <div style={tableCard}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
             <thead>
-              <tr className="border-b border-zinc-200/40 bg-zinc-50 dark:bg-zinc-800/60 text-xs uppercase tracking-wide opacity-60">
-                <th className="py-3 px-4 text-left whitespace-nowrap">Time</th>
-                <th className="py-3 px-4 text-left">Event</th>
-                <th className="py-3 px-4 text-left">Hero</th>
-                <th className="py-3 px-4 text-left">CP</th>
-                <th className="py-3 px-4 text-left whitespace-nowrap">Resolution</th>
-                <th className="py-3 px-4 text-left">Raw OCR</th>
-                <th className="py-3 px-4 text-left">Note</th>
+              <tr>
+                <th style={thStyle}>Time</th>
+                <th style={thStyle}>Event</th>
+                <th style={thStyle}>Hero</th>
+                <th style={thStyle}>CP</th>
+                <th style={thStyle}>Resolution</th>
+                <th style={thStyle}>Raw OCR</th>
+                <th style={thStyle}>Note</th>
               </tr>
             </thead>
             <tbody>
               {events.map((e, i) => (
-                <tr
-                  key={i}
-                  className="border-b border-zinc-200/20 hover:bg-zinc-100/40 dark:hover:bg-zinc-800/40 transition-colors"
-                >
-                  <td className="py-3 px-4 whitespace-nowrap text-xs opacity-70">{new Date(e.ts).toLocaleString()}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className="px-2 py-0.5 rounded-full text-white text-xs font-medium"
-                      style={{ background: pillColor(e.event_type) }}
-                    >
+                <tr key={i}>
+                  <td style={{ ...tdStyle, opacity: 0.55, fontFamily: "monospace", fontSize: 14, whiteSpace: "nowrap" }}>
+                    {new Date(e.ts).toLocaleString()}
+                  </td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      padding: "2px 9px",
+                      borderRadius: 99,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#fff",
+                      background: pillColor(e.event_type),
+                    }}>
                       {e.event_type}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-medium">{e.hero_name}</td>
-                  <td className="py-3 px-4 tabular-nums opacity-80">{e.cp ?? ""}</td>
-                  <td className="py-3 px-4 whitespace-nowrap font-mono text-xs opacity-60">{e.resolution || "—"}</td>
+                  <td style={{ ...tdStyle, fontWeight: 500 }}>{e.hero_name}</td>
+                  <td style={{ ...tdStyle, opacity: 0.75, fontVariantNumeric: "tabular-nums" }}>{e.cp ?? ""}</td>
+                  <td style={{ ...tdStyle, fontFamily: "monospace", fontSize: 14, opacity: 0.5, whiteSpace: "nowrap" }}>
+                    {e.resolution || "—"}
+                  </td>
                   <td
-                    className="py-3 px-4 font-mono text-xs max-w-[180px] truncate"
                     title={e.raw_ocr || ""}
-                    style={{ color: e.raw_ocr && e.hero_name !== e.raw_ocr ? "#f59e0b" : "inherit" }}
+                    style={{
+                      ...tdStyle,
+                      fontFamily: "monospace",
+                      fontSize: 14,
+                      maxWidth: 180,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      color: e.raw_ocr && e.hero_name !== e.raw_ocr ? "#f59e0b" : "var(--text)",
+                    }}
                   >
                     {e.raw_ocr || "—"}
                   </td>
-                  <td className="py-3 px-4 text-xs opacity-70 max-w-[280px]">{e.message}</td>
+                  <td style={{ ...tdStyle, opacity: 0.6, maxWidth: 280 }}>{e.message}</td>
                 </tr>
               ))}
               {events.length === 0 && (
                 <tr>
-                  <td className="py-10 px-4 opacity-50 text-center" colSpan={7}>No scan events yet.</td>
+                  <td colSpan={7} style={{ ...tdStyle, textAlign: "center", padding: "48px 16px", opacity: 0.4, borderBottom: "none" }}>
+                    No scan events yet.
+                  </td>
                 </tr>
               )}
             </tbody>

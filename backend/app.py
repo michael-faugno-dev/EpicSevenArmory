@@ -311,7 +311,7 @@ def process_image(image, username, rta_rank):
     resolutions will require adjusting these regions.
     """
     regions = {
-        'unit': {'x': 150, 'y': 170, 'width': 700, 'height': 60},
+        'unit': {'x': 150, 'y': 170, 'width': 700, 'height': 75},
         'cp': {'x': 207, 'y': 555, 'width': 200, 'height': 50},
         'imprint': {'x': 275, 'y': 360, 'width': 190, 'height': 100},
         'attack': {'x': 418, 'y': 620, 'width': 70, 'height': 29},
@@ -343,9 +343,19 @@ def process_image(image, username, rta_rank):
         # misread by Tesseract due to unusual glyphs in the game font.
         # Heroes released after the Smilegate API was last updated.
         HERO_OVERRIDES = [
+            "ae-Ningning",
             "Aki",
+            "Ambitious Tywin",
+            "Bomb Model Kanna",
+            "Commander Lorina",
+            "Conqueror Lilias",
             "Dragon King Sharun",
+            "Empyrean Illynav",
+            "Guard Captain Krau",
+            "Harsetti",
             "Hecate",
+            "Immortal Wukong",
+            "Inheritor Amiki",
             "Lady of the Scales",
             "Monarch of the Sword Iseria",
             "Ruiza",
@@ -356,6 +366,18 @@ def process_image(image, username, rta_rank):
 
         if "draaon bride senva" in unit_name:
             stats['unit'] = "Dragon Bride Senya"
+        elif "ambitious" in unit_name:
+            stats['unit'] = "Ambitious Tywin"
+        elif "bomb mo" in unit_name:
+            # OCR reads "Bomb Model Kanna" as "Bomb Moi..." due to stylised font.
+            stats['unit'] = "Bomb Model Kanna"
+        elif "empyrean" in unit_name:
+            stats['unit'] = "Empyrean Illynav"
+        elif "guard cap" in unit_name or "guard caption" in unit_name:
+            stats['unit'] = "Guard Captain Krau"
+        elif "setti" in unit_name and "ambitious" not in unit_name:
+            # Leading "H" gets cropped — any read containing "setti" is Harsetti.
+            stats['unit'] = "Harsetti"
         elif "lady of the" in unit_name:
             # OCR misreads the decorative artwork behind this hero's name plate.
             # Any read that starts with "lady of the" is reliably this unit.

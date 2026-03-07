@@ -37,7 +37,7 @@ OCR_BASE_H = 1080
 # OCR regions — same as process_image() in app.py.
 # Each entry: (x, y, width, height)
 OCR_REGIONS = {
-    "unit":               (150,  170, 700,  60),
+    "unit":               (150,  170, 700,  75),
     "cp":                 (207,  555, 200,  50),
     "imprint":            (275,  360, 190, 100),
     "attack":             (418,  620,  70,  29),
@@ -228,9 +228,19 @@ def auto_import_unit():
     # Safe to leave here permanently — once Smilegate adds them the entry just
     # becomes a harmless duplicate and the fuzzy match still picks the right one.
     HERO_OVERRIDES = [
+        "ae-Ningning",
         "Aki",
+        "Ambitious Tywin",
+        "Bomb Model Kanna",
+        "Commander Lorina",
+        "Conqueror Lilias",
         "Dragon King Sharun",
+        "Empyrean Illynav",
+        "Guard Captain Krau",
+        "Harsetti",
         "Hecate",
+        "Immortal Wukong",
+        "Inheritor Amiki",
         "Lady of the Scales",
         "Monarch of the Sword Iseria",
         "Ruiza",
@@ -241,6 +251,18 @@ def auto_import_unit():
 
     if "draaon bride senva" in raw_name:
         corrected = "Dragon Bride Senya"
+    elif "ambitious" in raw_name:
+        corrected = "Ambitious Tywin"
+    elif "bomb mo" in raw_name:
+        # OCR reads "Bomb Model Kanna" as "Bomb Moi..." due to stylised font.
+        corrected = "Bomb Model Kanna"
+    elif "empyrean" in raw_name:
+        corrected = "Empyrean Illynav"
+    elif "guard cap" in raw_name or "guard caption" in raw_name:
+        corrected = "Guard Captain Krau"
+    elif "setti" in raw_name and "ambitious" not in raw_name:
+        # Leading "H" gets cropped — any read containing "setti" is Harsetti.
+        corrected = "Harsetti"
     elif "spirit eye" in raw_name:
         corrected = "Spirit Eye Celine"
     elif "lady of the" in raw_name:
@@ -307,22 +329,42 @@ def _log_event(db, username: str, event_type: str, hero_name: str, cp, message: 
 @auto_import_bp.route("/scan_events", methods=["GET"])
 def scan_events():
     """
-    GET /scan_events?username=<user>
+    GET /scan_events?username=<user>[&all=1]
     Returns the 50 most recent auto-import events for the given user.
+    Pass all=1 to return the full history (used by CSV export).
     """
     username = request.args.get("username", "").strip()
     if not username:
         return jsonify({"ok": False, "events": []}), 200
 
+    fetch_all = request.args.get("all", "0") == "1"
+
     db = request.app_db
-    cursor = (
-        db.scan_events
-        .find({"username": username}, {"_id": 0})
-        .sort("ts", -1)
-        .limit(50)
-    )
-    events = list(cursor)
+    query = db.scan_events.find({"username": username}, {"_id": 0}).sort("ts", -1)
+    if not fetch_all:
+        query = query.limit(50)
+    events = list(query)
     return jsonify({"ok": True, "events": events}), 200
+
+
+@auto_import_bp.route("/scan_events", methods=["DELETE"])
+def clear_scan_events():
+    """
+    DELETE /scan_events?username=<user>
+    Deletes all scan_events for the given user.
+    Only accepted from localhost (same guard as set_status).
+    """
+    remote = request.remote_addr or ""
+    if remote not in ("127.0.0.1", "::1", "localhost"):
+        return jsonify({"error": "Forbidden"}), 403
+
+    username = request.args.get("username", "").strip()
+    if not username:
+        return jsonify({"error": "username required"}), 400
+
+    db = request.app_db
+    result = db.scan_events.delete_many({"username": username})
+    return jsonify({"ok": True, "deleted": result.deleted_count}), 200
 
 
 @auto_import_bp.route("/monitor_status", methods=["GET"])
