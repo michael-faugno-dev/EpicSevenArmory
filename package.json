@@ -4,7 +4,7 @@
   "main": "main.js",
   "scripts": {
     "react-test": "react-scripts test",
-    "react-start": "react-scripts start",
+    "react-start": "BROWSER=none react-scripts start",
     "electron-start": "wait-on http://localhost:3000 && electron-rebuild && electron .",
     "start": "concurrently \"npm run react-start\" \"npm run electron-start\"",
     "react-build": "react-scripts build",

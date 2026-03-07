@@ -15,6 +15,7 @@ import TwitchOverlaySetup from "./pages/TwitchOverlaySetup";
 import LoginPage from './pages/LoginPage';
 import AboutPage from "./pages/AboutPage";
 import AutoImportLog from "./pages/AutoImportLog";
+import BugReportPage from "./pages/BugReportPage";
 import { useAuth } from './context/AuthContext';
 import UpdateBanner from './components/UpdateBanner';
 import OnboardingModal from './components/OnboardingModal';
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Route path="/profile" element={<UserProfile />} />
       <Route path="/auto-import-log" element={<AutoImportLog />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/bug-report" element={<BugReportPage />} />
 
       {/* optional aliases */}
       <Route path="/your-units" element={<YourUnitsPage />} />

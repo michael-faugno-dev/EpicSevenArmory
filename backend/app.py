@@ -152,6 +152,9 @@ register_google_auth_blueprint(app, users_collection=users_collection, db=db)
 from scripts.hero_images import register_hero_images
 register_hero_images(app)
 
+from scripts.sync_hero_assets import start_sync
+start_sync(app)
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ------------------------
@@ -237,20 +240,32 @@ def fetch_unit_image(unit_name):
     return ''
 
 def correct_name(extracted_name, choices):
-    """
-    Fuzzy-match an OCR-extracted name to the closest official hero name.
+    """Match OCR output to the closest official hero name.
 
-    Uses token_set_ratio (word-order tolerant) weighted by a length-similarity
-    factor so that a short fragment like "sharun" cannot score equally against
-    both "Sharun" and the longer "Dragon King Sharun".  Returns None if the
-    best adjusted score is below 80.
+    Step 1 — exact prefix match: check whether the first N tokens of the OCR
+    output match a canonical name word-for-word (case-insensitive).  This strips
+    trailing OCR garbage ("frieren ooitcxr" → "Frieren") without fuzzy logic.
+    When multiple canonical names share the same prefix the longest match wins
+    ("Spirit Eye Celine" beats "Celine" when all three words are present).
 
-    An additional len_ratio guard rejects matches where the canonical name is
-    much shorter than the OCR text (ratio < 0.5).  This prevents base-form names
-    like "Celine" from winning over an unlisted alt-form like "Spirit Eye Celine".
-    The guard is bypassed when confidence is very high (≥ 96) so short-name typos
-    (e.g. "Celin" → "Celine") are still corrected.
+    Step 2 — weighted fuzzy match: handles character-level OCR noise where the
+    prefix check fails.  token_set_ratio is weighted by a length-similarity factor
+    and a len_ratio guard rejects short-name subset wins.
     """
+    extracted_lower = extracted_name.lower().strip()
+    extracted_tokens = extracted_lower.split()
+
+    # Step 1: exact word-prefix match
+    prefix_matches = []
+    for choice in choices:
+        choice_tokens = choice.lower().split()
+        n = len(choice_tokens)
+        if len(extracted_tokens) >= n and extracted_tokens[:n] == choice_tokens:
+            prefix_matches.append(choice)
+    if prefix_matches:
+        return max(prefix_matches, key=lambda c: len(c.split()))
+
+    # Step 2: weighted fuzzy fallback
     best_match = None
     best_score = 0
     best_len_ratio = 0
@@ -711,6 +726,31 @@ def get_selected_units_data():
             units_data.append(unit)
 
     return jsonify(units_data), 200
+
+
+@app.route('/bug_report', methods=['POST'])
+@require_auth
+def submit_bug_report():
+    import time as _time
+    username    = request.jwt_username
+    body        = request.get_json(silent=True) or {}
+    category    = str(body.get('category', 'Other')).strip()[:64]
+    description = str(body.get('description', '')).strip()[:2000]
+    steps       = str(body.get('steps', '')).strip()[:2000]
+
+    if not description:
+        return jsonify({"error": "Description is required"}), 400
+
+    db.bug_reports.insert_one({
+        "ts":          _time.time() * 1000,
+        "username":    username,
+        "category":    category,
+        "description": description,
+        "steps":       steps,
+        "status":      "open",
+    })
+    return jsonify({"ok": True}), 201
+
 
 if __name__ == '__main__':
     app.logger.info("Starting HTTP dev server on http://127.0.0.1:5000")

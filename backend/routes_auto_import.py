@@ -97,19 +97,34 @@ def _clean_unit_name(name: str) -> str:
 
 
 def _correct_name(extracted: str, choices: list) -> str:
-    """Fuzzy-match OCR output to the closest official hero name (≥80% confidence).
+    """Match OCR output to the closest official hero name.
 
-    Uses token_set_ratio (word-order tolerant) weighted by a length-similarity
-    factor so that a short OCR fragment like "sharun" cannot score equally against
-    both "Sharun" and the longer "Dragon King Sharun".  Names whose length closely
-    matches the extracted text are preferred over subset matches.
+    Step 1 — exact prefix match: check whether the first N tokens of the OCR
+    output match a canonical name word-for-word (case-insensitive).  This strips
+    trailing OCR garbage ("frieren ooitcxr" → "Frieren") without fuzzy logic.
+    When multiple canonical names share the same prefix the longest match wins
+    ("Spirit Eye Celine" beats "Celine" when all three words are present).
 
-    An additional len_ratio guard rejects matches where the canonical name is much
-    shorter than the OCR text (ratio < 0.5).  This prevents base-form names like
-    "Celine" from winning over an unlisted alt-form like "Spirit Eye Celine".
-    The guard is bypassed when confidence is very high (≥ 96).
+    Step 2 — weighted fuzzy match: handles character-level OCR noise where the
+    prefix check fails.  token_set_ratio is weighted by a length-similarity factor
+    and a len_ratio guard rejects short-name subset wins.
     """
     from fuzzywuzzy import fuzz
+
+    extracted_lower = extracted.lower().strip()
+    extracted_tokens = extracted_lower.split()
+
+    # Step 1: exact word-prefix match
+    prefix_matches = []
+    for choice in choices:
+        choice_tokens = choice.lower().split()
+        n = len(choice_tokens)
+        if len(extracted_tokens) >= n and extracted_tokens[:n] == choice_tokens:
+            prefix_matches.append(choice)
+    if prefix_matches:
+        return max(prefix_matches, key=lambda c: len(c.split()))
+
+    # Step 2: weighted fuzzy fallback
     best, best_score, best_len_ratio = None, 0, 0
     ext_len = len(extracted) or 1
     for choice in choices:
@@ -198,9 +213,11 @@ def auto_import_unit():
 
     # ── OCR ──────────────────────────────────────────────────────────────────
     stats = _ocr_image(pil_image, win_w, win_h)
+    resolution = f"{win_w}x{win_h}"
+    raw_ocr = stats.get("unit", "")          # what Tesseract saw, before any correction
 
     # Resolve unit name via fuzzy match against canonical list
-    raw_name = _clean_unit_name(stats.get("unit", "")).lower()
+    raw_name = _clean_unit_name(raw_ocr).lower()
     db = request.app_db
 
     # Load canonical names once per request (cached in app module via correct_unit_names)
@@ -224,6 +241,8 @@ def auto_import_unit():
 
     if "draaon bride senva" in raw_name:
         corrected = "Dragon Bride Senya"
+    elif "spirit eye" in raw_name:
+        corrected = "Spirit Eye Celine"
     elif "lady of the" in raw_name:
         # Decorative artwork behind this hero's name plate consistently corrupts
         # the OCR read (e.g. "lady of thes@@iee=").  Any prefix match is reliable.
@@ -234,11 +253,12 @@ def auto_import_unit():
         corrected = _correct_name(raw_name, all_names)
 
     if not corrected:
-        # Fall back to the cleaned OCR text so the unit is still saved.
-        # The user can rename it via the Edit button on the Your Units page.
-        corrected = _clean_unit_name(stats.get("unit", "")).strip() or raw_name or "(unknown)"
-        _log_event(db, username, "added", corrected, None,
-                   "Hero name uncertain — OCR read used as-is. Edit in Your Units if wrong.")
+        # No confident match — log the failure but return 200 so Electron
+        # doesn't treat it as a hard error; the unit is simply not saved.
+        _log_event(db, username, "error", raw_ocr or "(unknown)", None,
+                   "Hero name not recognised. Try importing again or use manual upload.",
+                   resolution, raw_ocr)
+        return jsonify({"ok": False, "skipped": True, "ocr_read": raw_ocr}), 200
 
     stats["unit"] = corrected
     stats["uploaded_by"] = username
@@ -260,7 +280,7 @@ def auto_import_unit():
         image_stats.insert_one(stats)
 
     # ── Log ──────────────────────────────────────────────────────────────────
-    _log_event(db, username, event_type, corrected, cp_raw, "")
+    _log_event(db, username, event_type, corrected, cp_raw, "", resolution, raw_ocr)
 
     return jsonify({
         "ok": True,
@@ -270,7 +290,8 @@ def auto_import_unit():
     }), 200
 
 
-def _log_event(db, username: str, event_type: str, hero_name: str, cp, message: str):
+def _log_event(db, username: str, event_type: str, hero_name: str, cp, message: str,
+               resolution: str = "", raw_ocr: str = ""):
     db.scan_events.insert_one({
         "ts":         time.time() * 1000,  # milliseconds (JS Date compatible)
         "username":   username,
@@ -278,6 +299,8 @@ def _log_event(db, username: str, event_type: str, hero_name: str, cp, message: 
         "hero_name":  hero_name,
         "cp":         cp,
         "message":    message or "",
+        "resolution": resolution,
+        "raw_ocr":    raw_ocr,
     })
 
 

@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 
 export default function LeftSidebar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [twitchLogin, setTwitchLogin] = useState(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.username) return;
+    api.get(`/profile?username=${encodeURIComponent(user.username)}`)
+      .then(res => {
+        const link = res.data?.profile?.links?.twitch;
+        if (link?.login) setTwitchLogin(link.login.toLowerCase());
+      })
+      .catch(() => {});
+  }, [isAuthenticated, user?.username]);
 
   const handleLogout = () => {
     try { logout(); } catch {}
@@ -26,6 +38,13 @@ export default function LeftSidebar() {
               <li><NavLink to="/auto-import-log" className="e7-link">Import Log</NavLink></li>
             </ul>
           </nav>
+
+          {/* Bug report — separate section above lower nav */}
+          <div className="e7-nav" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
+            <ul className="e7-list">
+              <li><NavLink to="/bug-report" className="e7-link">Report a Bug</NavLink></li>
+            </ul>
+          </div>
 
           {/* Lower section: Twitch Setup + About + Buy Me a Coffee + Logout */}
           <div className="e7-nav e7-nav--lower">
@@ -54,7 +73,12 @@ export default function LeftSidebar() {
             title="Click for settings"
             role="button"
           >
-            Logged in: <strong>{user?.username || 'User'}</strong>
+            <div>Logged in: <strong>{user?.username || 'User'}</strong></div>
+            {twitchLogin && (
+              <div style={{ fontSize: '0.75em', opacity: 0.7, marginTop: '2px' }}>
+                Twitch: <strong>@{twitchLogin}</strong>
+              </div>
+            )}
           </div>
         </>
       ) : (
